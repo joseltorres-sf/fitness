@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>THE PROTOCOL</title>
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --card: #1a1a1a;
+            --input-bg: #2a2a2a;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --accent: #ff3b30; /* Intense Red */
+            --success: #32d74b;
+            --warning: #ffd60a;
+            --border: #333;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding-bottom: 80px;
+        }
+
+        /* HEADER */
+        header {
+            background: rgba(15, 15, 15, 0.95);
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .date-display {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .key-btn {
+            background: none;
+            border: 1px solid #444;
+            color: var(--text-muted);
+            border-radius: 12px;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #444; 
+            border-radius: 50%;
+            margin-left: 5px;
+        }
+        .status-dot.connected { background-color: var(--success); box-shadow: 0 0 5px var(--success); }
+        .status-dot.offline { background-color: #666; }
+
+        .day-selector {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            scrollbar-width: none;
+            margin-top: 10px;
+        }
+        .day-selector::-webkit-scrollbar { display: none; }
+
+        .day-chip {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .day-chip.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* TABS */
+        .session-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            background: var(--card);
+            margin: 15px;
+            border-radius: 12px;
+            padding: 4px;
+        }
+
+        .tab {
+            padding: 12px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background: var(--input-bg);
+            color: var(--text-main);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* CARDS */
+        .container {
+            padding: 0 15px;
+            min-height: 50vh;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .exercise-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .exercise-target {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* HISTORY */
+        .history-pill {
+            font-size: 0.8rem;
+            background: rgba(255, 59, 48, 0.15);
+            color: var(--accent);
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: inline-block;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        /* SET ROWS */
+        .set-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .set-row {
+            display: grid;
+            grid-template-columns: 30px 1fr 1fr;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .set-row.single-input {
+            grid-template-columns: 30px 1fr;
+        }
+
+        /* Duration Inputs */
+        .duration-inputs {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0 10px;
+        }
+        
+        .duration-inputs input {
+            background: transparent;
+            border: none;
+            text-align: center;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            width: 100%;
+        }
+
+        .duration-inputs span {
+            font-weight: bold;
+            color: var(--text-muted);
+            padding-bottom: 2px;
+        }
+
+        .set-badge {
+            width: 30px;
+            height: 30px;
+            background: #2a2a2a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--text-muted);
+        }
+
+        .set-input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px 5px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            appearance: none;
+        }
+
+        .set-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: #333;
+        }
+
+        /* RATING */
+        .rating-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .rate-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.4;
+            transition: all 0.2s;
+        }
+
+        .rate-btn.selected {
+            opacity: 1;
+            transform: scale(1.02);
+            background: #333;
+            border-color: #555;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        /* MEALS */
+        .meal-item {
+            display: flex;
+            align-items: center;
+            background: var(--card);
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .checkbox {
+            width: 28px;
+            height: 28px;
+            border: 2px solid var(--text-muted);
+            border-radius: 8px;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .meal-item.checked .checkbox {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .meal-item.checked .checkbox:after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .meal-item.checked .meal-name {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .meal-name {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .meal-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+        
+        .info-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: inherit;
+            font-size: 0.9rem;
+            margin-left: 12px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0; 
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background: #1e1e1e;
+            width: 100%;
+            max-width: 400px;
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            color: var(--accent);
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+            text-transform: uppercase;
+        }
+
+        .modal-body {
+            color: #ddd;
+            line-height: 1.6;
+            font-size: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .modal-close-btn {
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+        
+        /* KEY INPUT STYLES (Tighter Formatting) */
+        .key-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .key-display {
+            background: #000;
+            padding: 10px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 1rem;
+            text-align: center;
+            border: 1px solid var(--accent);
+            margin: 10px 0;
+            word-break: break-all;
+            color: #aaa;
+        }
+        .key-instruction {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        /* CALCULATOR STYLES */
+        .calc-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+        .plates-visual {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .plate {
+            height: 60px;
+            width: 15px;
+            background: var(--accent);
+            border-radius: 3px;
+        }
+        .plate-45 { height: 80px; width: 18px; }
+        .plate-35 { height: 70px; width: 16px; }
+        .plate-25 { height: 60px; width: 14px; background: var(--success); }
+        .plate-10 { height: 40px; width: 12px; background: white; }
+        .plate-5  { height: 30px; width: 10px; background: #666; }
+        .plate-2_5 { height: 20px; width: 8px; background: #333; }
+
+        /* LOADING */
+        .loader-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #333;
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* UTILS */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .save-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-main);
+            color: var(--bg);
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 200;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-top">
+        <div class="date-display" id="currentDate">TODAY</div>
+        <div class="header-actions">
+            <button class="key-btn" onclick="openCalcModal()">🧮</button>
+            <button class="key-btn" onclick="openKeyModal()">🔑 Sync</button>
+            <div id="statusDot" class="status-dot"></div>
+        </div>
+    </div>
+    <div class="day-selector" id="daySelector">
+        <!-- JS Generates Days -->
+    </div>
+</header>
+
+<div class="session-tabs">
+    <div id="tab-AM" class="tab active" onclick="setTab('AM')">AM SHRED</div>
+    <div id="tab-PM" class="tab" onclick="setTab('PM')">PM BUILD</div>
+    <div id="tab-FOOD" class="tab" onclick="setTab('FOOD')">FUEL</div>
+</div>
+
+<div id="content" class="container">
+    <div class="loader-overlay" id="initialLoader">
+        <div class="spinner"></div>
+        <div style="margin-top: 15px; color: #888;">Connecting...</div>
+    </div>
+</div>
+
+<!-- MEAL MODAL -->
+<div id="mealModal" class="modal-overlay" onclick="closeModal('mealModal')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div id="modalTitle" class="modal-title">TITLE</div>
+        <div id="modalBody" class="modal-body">Details here...</div>
+        <button class="modal-close-btn" onclick="closeModal('mealModal')">GOT IT</button>
+    </div>
+</div>
+
+<!-- KEY MODAL -->
+<div id="keyModal" class="modal-overlay" onclick="closeModal('keyModal')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-title">BACKUP & RESTORE</div>
+        <div class="modal-body" style="text-align: center;">
+            <p id="keyInstruct" class="key-instruction">Use this key to sync across devices.</p>
+            
+            <div id="currentKeyDisplay" class="key-display">LOADING</div>
+            <button class="key-btn" onclick="copyKey()" id="copyKeyBtn" style="width:100%; justify-content:center; border-color:#555; padding:10px;">COPY KEY</button>
+            
+            <hr style="border:0; border-top:1px solid #333; margin:15px 0;">
+            
+            <p id="recoverInstruct" class="key-instruction">Enter Key or Backup Code to Restore:</p>
+            <div class="key-input-group">
+                <input type="text" id="recoverKeyInput" class="set-input" placeholder="ENTER KEY / CODE" style="text-align:center;">
+            </div>
+            <button class="modal-close-btn" onclick="recoverData()">RESTORE DATA</button>
+        </div>
+    </div>
+</div>
+
+<!-- CALCULATOR MODAL -->
+<div id="calcModal" class="modal-overlay" onclick="closeModal('calcModal')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-title">PLATE CALCULATOR</div>
+        <div class="calc-grid">
+            <input type="number" id="targetWeight" class="set-input" placeholder="Target Weight (e.g. 225)" style="font-size:1.5rem; padding:15px;" oninput="calculatePlates()">
+            <div id="calcResult" style="font-size:1.1rem; color:#ddd; min-height:40px;">
+                Enter weight to see plates
+            </div>
+            <div id="platesVisual" class="plates-visual"></div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('calcModal')">DONE</button>
+    </div>
+</div>
+
+<div class="save-toast" id="toast">Saved</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- USER CONFIGURATION (FILL THIS IN FOR GITHUB PAGES) ---
+    // If you are hosting this yourself, create a Firebase project and paste your config here.
+    // If left empty, the app will work in OFFLINE mode.
+    const USER_FIREBASE_CONFIG = {
+        apiKey: "AIzaSyD4Nvc7HzePDbBYXYSyOL7jHqZ5y06uz7w",
+        authDomain: "fitness-85228.firebaseapp.com",
+        projectId: "fitness-85228",
+        storageBucket: "fitness-85228.firebasestorage.app",
+        messagingSenderId: "491453478374",
+        appId: "1:491453478374:web:318d8eb73fc62f41c65227",
+        measurementId: "G-N7KERGZ5Y9"
+    };
+
+    // --- STATE ---
+    let userKey = localStorage.getItem('recomp_user_key');
+    if (!userKey) {
+        userKey = generateRandomKey();
+        localStorage.setItem('recomp_user_key', userKey);
+    }
+
+    let appData = { workouts: {}, meals: {} };
+    let useCloud = false;
+    let db = null;
+    let appId = null;
+    let auth = null;
+    let currentUser = null;
+    let getRef = null;
+
+    // --- INITIALIZATION ---
+    async function init() {
+        renderDaySelector();
+        updateDateHeader();
+        
+        try {
+            let config = null;
+            let isUserHosted = false;
+
+            // 1. Check for User Config (GitHub Pages)
+            if (USER_FIREBASE_CONFIG.apiKey) {
+                config = USER_FIREBASE_CONFIG;
+                isUserHosted = true;
+            } 
+            // 2. Check for Environment Config (Preview)
+            else if (typeof __firebase_config !== 'undefined') {
+                config = JSON.parse(__firebase_config);
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            }
+
+            if (config) {
+                const app = initializeApp(config);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                // Define Path Strategy
+                if (isUserHosted) {
+                    getRef = (key) => doc(db, 'users', key); // Simple path for self-hosted
+                } else {
+                    getRef = (key) => doc(db, 'artifacts', appId, 'public', 'data', 'userdata', key); // Internal path
+                }
+
+                // Auth Strategy
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        useCloud = true;
+                        document.getElementById('statusDot').classList.add('connected');
+                        setupListener();
+                    }
+                });
+            } else {
+                throw new Error("No config found");
+            }
+        } catch (err) {
+            console.log("Offline Mode Active:", err.message);
+            useCloud = false;
+            document.getElementById('statusDot').classList.add('offline');
+            document.getElementById('initialLoader').style.display = 'none';
+            // Load Local Data
+            const local = localStorage.getItem('recomp_offline_data');
+            if(local) appData = JSON.parse(local);
+            renderContent();
+        }
+    }
+
+    function setupListener() {
+        if (!getRef) return;
+        const docRef = getRef(userKey);
+        
+        onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                appData.workouts = data.workouts || {};
+                appData.meals = data.meals || {};
+                localStorage.setItem('recomp_offline_data', JSON.stringify(appData));
+            }
+            document.getElementById('initialLoader').style.display = 'none';
+            renderContent();
+        });
+    }
+
+    // --- EXERCISES ---
+    const workoutData = {
+        'Monday': {
+            AM: [
+                { id: 'm_am_1', name: 'Incline Walk (Zone 2)', target: '45 mins', type: 'cardio' },
+                { id: 'm_am_2', name: 'Hanging Leg Raises', target: '3 sets to Failure', type: 'duration' },
+                { id: 'm_am_3', name: 'Bicycle Crunches', target: '3 x 50 reps', type: 'reps_only' },
+                { id: 'm_am_4', name: 'Plank', target: '3 x 60s', type: 'duration' }
+            ],
+            PM: [
+                { id: 'm_pm_1', name: 'Barbell Bench Press', target: '3 x 6-8' },
+                { id: 'm_pm_2', name: 'Overhead Press', target: '3 x 8-10' },
+                { id: 'm_pm_3', name: 'Incline DB Press', target: '3 x 10-12' },
+                { id: 'm_pm_4', name: 'DB Lateral Raises', target: '3 x 12-15' },
+                { id: 'm_pm_5', name: 'Tricep Pushdowns', target: '3 x 12-15' }
+            ]
+        },
+        'Tuesday': {
+            AM: [
+                { id: 't_am_1', name: 'Incline Walk (Zone 2)', target: '45 mins', type: 'cardio' },
+                { id: 't_am_2', name: 'Cable Crunches', target: '3 x 15-20' },
+                { id: 't_am_3', name: 'Ab Wheel Rollouts', target: '3 x 10-15', type: 'reps_only' }
+            ],
+            PM: [
+                { id: 't_pm_1', name: 'Barbell Rows', target: '3 x 6-8' },
+                { id: 't_pm_2', name: 'Weighted Pull-Ups', target: '3 x 8-10' },
+                { id: 't_pm_3', name: 'Seated Cable Rows', target: '3 x 10-12' },
+                { id: 't_pm_4', name: 'Face Pulls', target: '3 x 15-20' },
+                { id: 't_pm_5', name: 'Barbell Bicep Curls', target: '3 x 10-12' }
+            ]
+        },
+        'Wednesday': {
+            AM: [
+                { id: 'w_am_1', name: 'Incline Walk (Zone 2)', target: '45 mins', type: 'cardio' },
+                { id: 'w_am_2', name: 'Plank', target: '3 x Max Time', type: 'duration' }
+            ],
+            PM: [
+                { id: 'w_pm_1', name: 'Barbell Squats', target: '3 x 6-8' },
+                { id: 'w_pm_2', name: 'Romanian Deadlifts', target: '3 x 8-10' },
+                { id: 'w_pm_3', name: 'Leg Press', target: '3 x 12-15' },
+                { id: 'w_pm_4', name: 'Leg Curls', target: '3 x 12-15' },
+                { id: 'w_pm_5', name: 'Calf Raises', target: '4 x 15-20' }
+            ]
+        },
+        'Thursday': {
+            AM: [
+                { id: 'th_am_1', name: 'Incline Walk (Zone 2)', target: '45 mins', type: 'cardio' },
+                { id: 'th_am_2', name: 'Hanging Leg Raises', target: '3 x Failure', type: 'duration' },
+                { id: 'th_am_3', name: 'Bicycle Crunches', target: '3 x 50', type: 'reps_only' }
+            ],
+            PM: [
+                { id: 'th_pm_1', name: 'Incline BB Bench', target: '3 x 8-10' },
+                { id: 'th_pm_2', name: 'DB Shoulder Press', target: '3 x 10-12' },
+                { id: 'th_pm_3', name: 'Cable Crossovers', target: '3 x 12-15' },
+                { id: 'th_pm_4', name: 'Cable Lateral Raises', target: '3 x 15-20' },
+                { id: 'th_pm_5', name: 'Overhead Tri Ext', target: '3 x 12-15' }
+            ]
+        },
+        'Friday': {
+            AM: [
+                { id: 'f_am_1', name: 'Incline Walk (Zone 2)', target: '45 mins', type: 'cardio' },
+                { id: 'f_am_2', name: 'Cable Crunches', target: '3 x 15-20' }
+            ],
+            PM: [
+                { id: 'f_pm_1', name: 'Lat Pulldowns', target: '3 x 10-12' },
+                { id: 'f_pm_2', name: 'Single-Arm DB Row', target: '3 x 10-12' },
+                { id: 'f_pm_3', name: 'Straight-Arm Pulldown', target: '3 x 12-15' },
+                { id: 'f_pm_4', name: 'Rear Delt Flys', target: '3 x 15-20' },
+                { id: 'f_pm_5', name: 'Hammer Curls', target: '3 x 10-12' }
+            ]
+        },
+        'Saturday': {
+            AM: [
+                { id: 's_am_1', name: 'Incline Walk (Zone 2)', target: '45 mins', type: 'cardio' },
+                { id: 's_am_2', name: 'Plank', target: '3 x Max Time', type: 'duration' }
+            ],
+            PM: [
+                { id: 's_pm_1', name: 'Deadlifts', target: '3 x 5-8' },
+                { id: 's_pm_2', name: 'Walking Lunges', target: '3 x 10-12' },
+                { id: 's_pm_3', name: 'Leg Extensions', target: '3 x 15-20' },
+                { id: 's_pm_4', name: 'Glute Bridges', target: '3 x 12-15' },
+                { id: 's_pm_5', name: 'Seated Calf Raises', target: '4 x 15-20' }
+            ]
+        },
+        'Sunday': {
+            AM: [{ id: 'su_am_1', name: 'Active Recovery', target: 'Walk / Stretch', type: 'cardio' }],
+            PM: [{ id: 'su_pm_1', name: 'Rest', target: 'Sleep & Eat', type: 'cardio' }]
+        }
+    };
+
+    const meals = [
+        { id: 'm1', name: 'Breakfast', desc: 'Oats, Whey, Berries, Almond Butter', details: '• 1 cup Oatmeal (cooked with water)\n• 1 scoop Whey Protein\n• 1/2 cup Blueberries\n• 1 tbsp Almond Butter' },
+        { id: 'm2', name: 'Lunch', desc: 'Chicken, Brown Rice, Broccoli', details: '• 6 oz Grilled Chicken Breast\n• 1 cup Cooked Brown Rice\n• 2 cups Steamed Broccoli' },
+        { id: 'm3', name: 'Pre-Workout', desc: 'Banana, Whey Isolate', details: '• 1 Medium Banana\n• 1 scoop Whey Protein Isolate (water)' },
+        { id: 'm4', name: 'Post-Workout', desc: 'Lean Beef/Salmon, Sweet Potato', details: '• 6 oz Lean Ground Beef (93%) OR Salmon\n• 1 Medium Baked Sweet Potato\n• 2 cups Green Beans or Asparagus' },
+        { id: 'm5', name: 'Before Bed', desc: 'Greek Yogurt, Walnuts', details: '• 1 cup Plain Greek Yogurt (Non-fat)\n• 1/4 cup Walnuts' }
+    ];
+
+    // --- UI STATE ---
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const shortDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    let currentDayIdx = new Date().getDay();
+    let selectedDay = days[currentDayIdx];
+    let activeTab = 'PM'; 
+    if (new Date().getHours() < 12) activeTab = 'AM';
+
+    // --- RENDER ---
+    window.setTab = function(tabName) {
+        activeTab = tabName;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const activeEl = document.getElementById(`tab-${tabName}`);
+        if(activeEl) activeEl.classList.add('active');
+        renderContent();
+    }
+
+    function renderDaySelector() {
+        const selector = document.getElementById('daySelector');
+        selector.innerHTML = '';
+        days.forEach((day, idx) => {
+            const chip = document.createElement('div');
+            chip.className = `day-chip ${day === selectedDay ? 'active' : ''}`;
+            chip.innerText = shortDays[idx];
+            chip.onclick = () => {
+                selectedDay = day;
+                renderDaySelector();
+                renderContent();
+            };
+            selector.appendChild(chip);
+        });
+    }
+
+    function updateDateHeader() {
+        const today = new Date();
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
+        document.getElementById('currentDate').innerText = today.toLocaleDateString('en-US', options);
+    }
+
+    function getSetCount(targetStr, type) {
+        if(type === 'cardio') return 1;
+        const match = targetStr.match(/^(\d+)/);
+        if (match && match[1]) return parseInt(match[1]);
+        if(targetStr.includes('mins')) return 1;
+        return 1;
+    }
+
+    function parseDuration(val) {
+        if (!val) return { m: '', s: '' };
+        if (!val.toString().includes(':')) {
+            const secs = parseInt(val);
+            if (!isNaN(secs)) {
+                const m = Math.floor(secs / 60);
+                const s = secs % 60;
+                return { m: m > 0 ? m : '', s: s < 10 ? '0'+s : s };
+            }
+            return { m: '', s: '' };
+        }
+        const parts = val.split(':');
+        return { m: parts[0], s: parts[1] };
+    }
+
+    function renderContent() {
+        const content = document.getElementById('content');
+        content.innerHTML = '';
+
+        if (activeTab === 'FOOD') {
+            const dateKey = getTodayDateStr();
+            const todaysMeals = appData.meals[dateKey] || {};
+            meals.forEach(meal => {
+                const isChecked = todaysMeals[meal.id] === true;
+                const div = document.createElement('div');
+                div.className = `meal-item ${isChecked ? 'checked' : ''}`;
+                div.onclick = () => toggleMeal(meal.id);
+                div.innerHTML = `
+                    <div class="checkbox"></div>
+                    <div style="flex:1">
+                        <div class="meal-name">${meal.name}</div>
+                        <div class="meal-desc">${meal.desc}</div>
+                    </div>
+                    <div class="info-btn" onclick="openMealInfo(event, '${meal.id}')">i</div>
+                `;
+                content.appendChild(div);
+            });
+            return;
+        }
+
+        const sessionExercises = workoutData[selectedDay] ? workoutData[selectedDay][activeTab] : [];
+        if (!sessionExercises || sessionExercises.length === 0) {
+            content.innerHTML = '<div class="empty-state">Rest or No Workout Scheduled</div>';
+            return;
+        }
+
+        sessionExercises.forEach(ex => {
+            const key = getStorageKey(selectedDay, ex.id);
+            const todayData = appData.workouts[key] || {};
+            const history = getHistory(ex.id);
+            const numSets = getSetCount(ex.target, ex.type);
+            
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            let historyHTML = '';
+            if (history) {
+                if (ex.type === 'cardio') {
+                    const speed = history.sets?.[0]?.w || '-';
+                    const inc = history.sets?.[0]?.r || '-';
+                    historyHTML = `<div class="history-pill">PREV: Speed ${speed} / Inc ${inc}</div>`;
+                } else if (ex.type === 'duration') {
+                    const setHistory = (history.sets || []).map(s => s.r || '-').join(', ');
+                    historyHTML = `<div class="history-pill">PREV: ${setHistory}</div>`;
+                } else if (ex.type === 'reps_only') {
+                     const setHistory = (history.sets || []).map(s => s.r || '-').join(', ');
+                    historyHTML = `<div class="history-pill">PREV: ${setHistory} Reps</div>`;
+                } else if (history.sets && history.sets.length > 0) {
+                    const setHistory = history.sets.map(s => {
+                        if (s.w && s.r) return `${s.w}x${s.r}`;
+                        return '-';
+                    }).join(', ');
+                    historyHTML = `<div class="history-pill">PREV: ${setHistory} ${history.emoji || ''}</div>`;
+                }
+            } else {
+                historyHTML = `<div class="history-pill" style="background:transparent; color:#444">No previous data</div>`;
+            }
+
+            let setsHTML = `<div class="set-container" id="sets-${ex.id}">`;
+            for(let i=0; i<numSets; i++) {
+                const setNum = i + 1;
+                const setData = (todayData.sets && todayData.sets[i]) ? todayData.sets[i] : {w:'', r:''};
+                const touchedAttr = setData.w || setData.r ? 'data-touched="true"' : 'data-touched="false"';
+
+                if (ex.type === 'cardio') {
+                    setsHTML += `
+                        <div class="set-row">
+                            <div class="set-badge">#</div>
+                            <input type="number" class="set-input" placeholder="Speed" value="${setData.w}" onchange="saveSet('${ex.id}', ${i}, 'w', this.value)">
+                            <input type="number" class="set-input" placeholder="Incline" value="${setData.r}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">
+                        </div>
+                    `;
+                } else if (ex.type === 'duration') {
+                    const timeObj = parseDuration(setData.r);
+                    setsHTML += `
+                        <div class="set-row single-input">
+                            <div class="set-badge">${setNum}</div>
+                            <div class="duration-inputs" id="dur-${ex.id}-${i}" ${touchedAttr}>
+                                <input type="number" class="dur-min" placeholder="M" value="${timeObj.m}" oninput="handleDurationInput('${ex.id}', ${i}, 'm', this.value)">
+                                <span>:</span>
+                                <input type="number" class="dur-sec" placeholder="S" value="${timeObj.s}" oninput="handleDurationInput('${ex.id}', ${i}, 's', this.value)">
+                            </div>
+                        </div>
+                    `;
+                } else if (ex.type === 'reps_only') {
+                    setsHTML += `
+                        <div class="set-row single-input">
+                            <div class="set-badge">${setNum}</div>
+                            <input type="number" class="set-input" placeholder="Reps" value="${setData.r}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">
+                        </div>
+                    `;
+                } else {
+                    const weightEvent = i === 0 ? `onchange="handleFirstSetAutofill('${ex.id}', 'w', this.value)"` : `onchange="saveSet('${ex.id}', ${i}, 'w', this.value); markTouched('${ex.id}', ${i})"`;
+                    setsHTML += `
+                        <div class="set-row">
+                            <div class="set-badge">${setNum}</div>
+                            <input type="number" class="set-input autofill-target" id="w-${ex.id}-${i}" placeholder="Lbs" value="${setData.w}" ${touchedAttr} ${weightEvent}>
+                            <input type="number" class="set-input" placeholder="Reps" value="${setData.r}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">
+                        </div>
+                    `;
+                }
+            }
+            setsHTML += '</div>';
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div>
+                        <div class="exercise-name">${ex.name}</div>
+                        <div class="exercise-target">${ex.target}</div>
+                    </div>
+                    <div class="info-btn" onclick="openGoogleSearch('${ex.name.replace(/'/g, "\\'")}')">?</div>
+                </div>
+                ${historyHTML}
+                ${setsHTML}
+                <div class="rating-group">
+                    <div class="rate-btn ${todayData.rating === 'easy' ? 'selected' : ''}" onclick="saveRating('${ex.id}', 'easy')">🟢</div>
+                    <div class="rate-btn ${todayData.rating === 'med' ? 'selected' : ''}" onclick="saveRating('${ex.id}', 'med')">🟡</div>
+                    <div class="rate-btn ${todayData.rating === 'hard' ? 'selected' : ''}" onclick="saveRating('${ex.id}', 'hard')">🔴</div>
+                </div>
+            `;
+            content.appendChild(card);
+        });
+    }
+
+    // --- LOGIC ---
+    window.handleDurationInput = function(exId, index, type, val) {
+        const container = document.getElementById(`dur-${exId}-${index}`);
+        const minInput = container.querySelector('.dur-min');
+        const secInput = container.querySelector('.dur-sec');
+        container.setAttribute('data-touched', 'true');
+        let m = minInput.value;
+        let s = secInput.value;
+        if (s.length === 1 && m !== '') s = '0' + s;
+        const combined = (m ? m : '0') + ':' + (s ? s : '00');
+        saveSet(exId, index, 'r', combined);
+        if (index === 0) autofillDuration(exId, type, val);
+    }
+
+    window.autofillDuration = function(exId, type, val) {
+        const setContainer = document.getElementById(`sets-${exId}`);
+        const rows = setContainer.querySelectorAll('.duration-inputs');
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            const isTouched = row.getAttribute('data-touched') === 'true';
+            if (!isTouched) {
+                const minInput = row.querySelector('.dur-min');
+                const secInput = row.querySelector('.dur-sec');
+                if (type === 'm') minInput.value = val;
+                if (type === 's') secInput.value = val;
+                let m = minInput.value;
+                let s = secInput.value;
+                if (s.length === 1 && m !== '') s = '0' + s;
+                const combined = (m ? m : '0') + ':' + (s ? s : '00');
+                saveSet(exId, i, 'r', combined);
+            }
+        }
+    }
+
+    window.handleFirstSetAutofill = function(exId, field, value) {
+        saveSet(exId, 0, field, value);
+        const container = document.getElementById(`sets-${exId}`);
+        const inputs = container.querySelectorAll('.autofill-target');
+        for (let i = 1; i < inputs.length; i++) {
+            const input = inputs[i];
+            const isTouched = input.getAttribute('data-touched') === 'true';
+            if (!isTouched || input.value === '') {
+                input.value = value;
+                saveSet(exId, i, field, value);
+            }
+        }
+    }
+
+    window.markTouched = function(exId, index) {
+        let input = document.getElementById(`w-${exId}-${index}`);
+        if(input) input.setAttribute('data-touched', 'true');
+    }
+
+    function saveData() {
+        if (useCloud && getRef) {
+            const docRef = getRef(userKey);
+            setDoc(docRef, appData, { merge: true });
+        } else {
+            // Offline Save
+            localStorage.setItem('recomp_offline_data', JSON.stringify(appData));
+        }
+        showToast();
+    }
+
+    window.saveSet = function(exId, setIndex, field, value) {
+        const key = getStorageKey(selectedDay, exId);
+        let data = appData.workouts[key] ? JSON.parse(JSON.stringify(appData.workouts[key])) : {};
+        if(!data.sets) data.sets = [];
+        if(!data.sets[setIndex]) data.sets[setIndex] = {w:'', r:''};
+        data.sets[setIndex][field] = value;
+        data.timestamp = Date.now();
+        data.date = getTodayDateStr();
+        data.exerciseId = exId;
+        appData.workouts[key] = data;
+        saveData();
+    }
+
+    window.saveRating = function(exId, rating) {
+        const key = getStorageKey(selectedDay, exId);
+        let data = appData.workouts[key] ? JSON.parse(JSON.stringify(appData.workouts[key])) : {};
+        data.rating = rating;
+        data.timestamp = Date.now();
+        data.date = getTodayDateStr();
+        data.exerciseId = exId;
+        appData.workouts[key] = data;
+        renderContent();
+        saveData();
+    }
+
+    window.toggleMeal = function(mealId) {
+        const dateKey = getTodayDateStr();
+        let data = appData.meals[dateKey] ? JSON.parse(JSON.stringify(appData.meals[dateKey])) : {};
+        data[mealId] = !data[mealId];
+        appData.meals[dateKey] = data;
+        renderContent();
+        saveData();
+    }
+
+    // --- CALCULATOR LOGIC ---
+    window.openCalcModal = function() {
+        document.getElementById('calcModal').classList.add('active');
+        document.getElementById('targetWeight').value = '';
+        document.getElementById('calcResult').innerHTML = 'Enter weight to see plates';
+        document.getElementById('platesVisual').innerHTML = '';
+        document.getElementById('targetWeight').focus();
+    }
+    
+    window.calculatePlates = function() {
+        const val = parseInt(document.getElementById('targetWeight').value);
+        if(!val || val < 45) {
+            document.getElementById('calcResult').innerHTML = "Enter weight > 45";
+            document.getElementById('platesVisual').innerHTML = '';
+            return;
+        }
+        
+        const weightPerSide = (val - 45) / 2;
+        const plates = [45, 35, 25, 10, 5, 2.5];
+        let remaining = weightPerSide;
+        let result = [];
+        let visualHTML = '';
+
+        plates.forEach(p => {
+            while (remaining >= p) {
+                result.push(p);
+                remaining -= p;
+                let className = `plate plate-${Math.floor(p)}`;
+                if(p === 2.5) className = 'plate plate-2_5';
+                visualHTML += `<div class="${className}"></div>`;
+            }
+        });
+        
+        const counts = {};
+        result.forEach(p => counts[p] = (counts[p] || 0) + 1);
+        let text = Object.entries(counts).map(([p, count]) => `${count}x ${p}`).join(', ');
+        
+        document.getElementById('calcResult').innerHTML = `<b>${text}</b> per side`;
+        document.getElementById('platesVisual').innerHTML = visualHTML;
+    }
+
+    // --- KEY LOGIC ---
+    function generateRandomKey() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let result = '';
+        for (let i = 0; i < 6; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    window.openKeyModal = function() {
+        document.getElementById('keyModal').classList.add('active');
+        if (useCloud) {
+            document.getElementById('currentKeyDisplay').innerText = userKey;
+            document.getElementById('keyInstruct').innerText = "Use this key to sync across devices (Firebase Active).";
+            document.getElementById('copyKeyBtn').innerText = "COPY KEY";
+            document.getElementById('recoverKeyInput').placeholder = "ENTER KEY";
+        } else {
+            // OFFLINE MODE: Show Base64 Data String
+            const backupStr = btoa(JSON.stringify(appData));
+            document.getElementById('currentKeyDisplay').innerText = backupStr;
+            document.getElementById('keyInstruct').innerText = "OFFLINE MODE: Copy this backup code to save/transfer data.";
+            document.getElementById('copyKeyBtn').innerText = "COPY BACKUP CODE";
+            document.getElementById('recoverKeyInput').placeholder = "PASTE BACKUP CODE HERE";
+        }
+    }
+
+    window.copyKey = function() {
+        const text = document.getElementById('currentKeyDisplay').innerText;
+        navigator.clipboard.writeText(text);
+        if(useCloud) alert('Key copied: ' + text);
+        else alert('Backup code copied! Save this text securely.');
+    }
+
+    window.recoverData = function() {
+        const input = document.getElementById('recoverKeyInput').value.trim();
+        if (input.length < 4) {
+            alert('Invalid Input');
+            return;
+        }
+
+        if (useCloud) {
+            // Online Recovery
+            userKey = input.toUpperCase();
+            localStorage.setItem('recomp_user_key', userKey);
+            document.getElementById('initialLoader').style.display = 'flex';
+            closeModal('keyModal');
+            if(unsubscribe) unsubscribe();
+            setupListener();
+        } else {
+            // Offline Recovery (Parse Base64)
+            try {
+                const decoded = atob(input);
+                const newData = JSON.parse(decoded);
+                if(newData.workouts || newData.meals) {
+                    appData = newData;
+                    localStorage.setItem('recomp_offline_data', JSON.stringify(appData));
+                    alert("Data Restored Successfully!");
+                    closeModal('keyModal');
+                    renderContent();
+                } else {
+                    throw new Error("Invalid Format");
+                }
+            } catch(e) {
+                alert("Invalid Backup Code. Please check the text and try again.");
+            }
+        }
+    }
+
+    // --- MODALS & UTILS ---
+    window.openGoogleSearch = function(term) {
+        const url = 'https://www.google.com/search?q=' + encodeURIComponent(term);
+        window.open(url, '_blank');
+    }
+
+    window.openMealInfo = function(e, mealId) {
+        e.stopPropagation();
+        const meal = meals.find(m => m.id === mealId);
+        document.getElementById('modalTitle').innerText = meal.name;
+        document.getElementById('modalBody').innerText = meal.details;
+        document.getElementById('mealModal').classList.add('active');
+    }
+
+    window.closeModal = function(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+
+    function getTodayDateStr() {
+        return new Date().toISOString().split('T')[0];
+    }
+    
+    function getStorageKey(dayName, exerciseId) {
+        return `${getTodayDateStr()}_${exerciseId}`;
+    }
+
+    function getHistory(exId) {
+        const todayStr = getTodayDateStr();
+        const matches = [];
+        Object.values(appData.workouts).forEach(docData => {
+            if (docData.exerciseId === exId && docData.date !== todayStr) {
+                matches.push(docData);
+            }
+        });
+        if (matches.length === 0) return null;
+        matches.sort((a, b) => new Date(b.date) - new Date(a.date));
+        return matches[0];
+    }
+
+    function showToast() {
+        const toast = document.getElementById('toast');
+        toast.style.opacity = '1';
+        setTimeout(() => { toast.style.opacity = '0'; }, 1000);
+    }
+
+    init();
+
+</script>
+</body>
+</html>
