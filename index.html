@@ -3,44 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Meta Theme Colors for Mobile Browsers -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F2EB">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#151413">
+    
     <title>FITNESS</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
-                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
-                    },
-                    colors: {
-                        brand: {
-                            base: '#F5F2EB',       /* Main Background */
-                            surface: '#EBE6DD',    /* Secondary/Hover */
-                            line: '#D4CDC1',       /* Borders/Grid Lines */
-                            text: '#3A352F',       /* Primary Text */
-                            muted: '#8C857B',      /* Secondary Text */
-                            accent: '#A4907C',     /* Accents */
-                            forest: '#1F3A2C',     /* Dark Interactive Green */
-                        },
-                        rust: { DEFAULT: '#C86A58' },
-                        brass: '#C29A5B',
-                        slate: '#5B7B8C',
-                        forest: { 500: '#4A6B56', 700: '#2C4F3B' }
-                    }
-                }
+    <style>
+        /* CSS Variables for Light/Dark Mode Switching */
+        :root {
+            --brand-base: #F5F2EB;       /* Main Background */
+            --brand-surface: #EBE6DD;    /* Secondary/Hover */
+            --brand-line: #D4CDC1;       /* Borders/Grid Lines */
+            --brand-text: #3A352F;       /* Primary Text */
+            --brand-muted: #8C857B;      /* Secondary Text */
+            --brand-accent: #A4907C;     /* Accents */
+            --brand-forest: #1F3A2C;     /* Dark Interactive Green */
+            --shadow-color: rgba(58,53,47,0.05);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --brand-base: #151413;       /* Deep Charcoal/Brown */
+                --brand-surface: #211F1D;    /* Slightly lighter surface */
+                --brand-line: #36332E;       /* Visible dark borders */
+                --brand-text: #E8E3DB;       /* Off-white text */
+                --brand-muted: #948F87;      /* Greyed text */
+                --brand-accent: #A4907C;     /* Maintained accent */
+                --brand-forest: #8FA696;     /* Muted sage for dark mode visibility */
+                --shadow-color: rgba(0, 0, 0, 0.4);
             }
         }
-    </script>
 
-    <style>
         body {
-            background-color: #F5F2EB;
-            color: #3A352F;
+            background-color: var(--brand-base);
+            color: var(--brand-text);
             /* Subtle organic noise texture */
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
             -webkit-font-smoothing: antialiased;
@@ -48,7 +50,7 @@
 
         /* Hard shadow for main container (Industrial Look) */
         .industrial-shadow {
-            box-shadow: 8px 8px 0px 0px rgba(58,53,47,0.05);
+            box-shadow: 8px 8px 0px 0px var(--shadow-color);
         }
 
         .reveal-up {
@@ -68,8 +70,8 @@
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
         .loader {
-            border: 2px solid #D4CDC1;
-            border-top: 2px solid #3A352F;
+            border: 2px solid var(--brand-line);
+            border-top: 2px solid var(--brand-text);
             border-radius: 50%;
             width: 20px;
             height: 20px;
@@ -77,6 +79,34 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            base: 'var(--brand-base)',
+                            surface: 'var(--brand-surface)',
+                            line: 'var(--brand-line)',
+                            text: 'var(--brand-text)',
+                            muted: 'var(--brand-muted)',
+                            accent: 'var(--brand-accent)',
+                            forest: 'var(--brand-forest)',
+                        },
+                        rust: { DEFAULT: '#C86A58' },
+                        brass: '#C29A5B',
+                        slate: '#5B7B8C',
+                        forest: { 500: '#4A6B56', 700: '#2C4F3B' }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
 <body class="min-h-screen flex flex-col p-4 md:p-8 pt-6 relative selection:bg-brand-forest selection:text-brand-base">
 
@@ -143,7 +173,7 @@
     
     <!-- Info/Meal Modal -->
     <div id="infoModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-brand-text/10 backdrop-blur-sm" onclick="closeModal('infoModal')"></div>
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('infoModal')"></div>
         <div class="relative bg-brand-base border border-brand-line w-full max-w-lg industrial-shadow p-6">
             <div class="flex justify-between items-start mb-4">
                 <h3 id="modalTitle" class="font-mono text-[12px] tracking-[0.15em] text-brand-text uppercase font-bold">Details</h3>
@@ -155,7 +185,7 @@
 
     <!-- Key/Sync Modal -->
     <div id="keyModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-brand-text/10 backdrop-blur-sm" onclick="closeModal('keyModal')"></div>
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('keyModal')"></div>
         <div class="relative bg-brand-base border border-brand-line w-full max-w-md industrial-shadow">
             <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center">
                 <h3 class="font-mono text-[10px] tracking-[0.2em] text-brand-text uppercase flex items-center gap-2">
@@ -170,7 +200,7 @@
                         Generating...
                     </div>
                 </div>
-                <button onclick="copyKey()" class="w-full bg-brand-text text-brand-base font-mono text-[10px] uppercase py-3 hover:bg-black transition-colors mb-6 flex items-center justify-center gap-2">
+                <button onclick="copyKey()" class="w-full bg-brand-text text-brand-base font-mono text-[10px] uppercase py-3 hover:opacity-80 transition-colors mb-6 flex items-center justify-center gap-2">
                     <i data-lucide="copy" width="12" height="12"></i> Copy Key to Clipboard
                 </button>
                 
@@ -189,7 +219,7 @@
 
     <!-- Plate Calculator Modal -->
     <div id="calcModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-brand-text/10 backdrop-blur-sm" onclick="closeModal('calcModal')"></div>
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('calcModal')"></div>
         <div class="relative bg-brand-base border border-brand-line w-full max-w-md industrial-shadow">
              <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center">
                 <h3 class="font-mono text-[10px] tracking-[0.2em] text-brand-text uppercase flex items-center gap-2">
@@ -216,7 +246,7 @@
 
     <!-- Stats/Consistency Modal -->
     <div id="statsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-brand-text/10 backdrop-blur-sm" onclick="closeModal('statsModal')"></div>
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('statsModal')"></div>
         <div class="relative bg-brand-base border border-brand-line w-full max-w-lg industrial-shadow">
              <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center">
                 <h3 class="font-mono text-[10px] tracking-[0.2em] text-brand-text uppercase flex items-center gap-2">
@@ -448,7 +478,7 @@
                 const todaysMeals = appData.meals[dateKey] || {};
                 
                 if (meals.length === 0) {
-                     content.innerHTML = emptyStateHTML('No Meals Configured');
+                     content.innerHTML = `<div class="bg-brand-base p-12 text-center text-brand-muted font-mono text-[10px] uppercase">No Meals Configured</div>`;
                      return;
                 }
 
@@ -800,20 +830,16 @@
             visualEl.innerHTML = barHtml + `<div class="flex items-center gap-1.5 z-10 relative">${plateHtml}</div>`;
         };
 
-        // NEW: Match history by Exact Exercise Name instead of ID 
-        // This links identical workouts across different days seamlessly 
         function getHistory(exName) {
             const todayStr = getTodayDateStr();
             const matches = [];
 
-            // 1. Gather all unique IDs that correspond to this exercise name
             const matchingIds = new Set();
             Object.values(workoutData).forEach(day => {
                 if (day.AM) day.AM.forEach(ex => { if(ex.name === exName) matchingIds.add(ex.id) });
                 if (day.PM) day.PM.forEach(ex => { if(ex.name === exName) matchingIds.add(ex.id) });
             });
 
-            // 2. Query stored data for any of those IDs
             Object.values(appData.workouts).forEach(d => {
                 if (matchingIds.has(d.exerciseId) && d.date !== todayStr) {
                     matches.push(d);
@@ -857,7 +883,8 @@
             
             let svghtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">`;
             
-            svghtml += `<line x1="${startX}" y1="30" x2="${startX + (step * (daysToShow - 1))}" y2="30" stroke="#D4CDC1" stroke-width="1" stroke-linecap="round" opacity="0.5" />`;
+            // Draw baseline using CSS variables to respond to dark mode automatically
+            svghtml += `<line x1="${startX}" y1="30" x2="${startX + (step * (daysToShow - 1))}" y2="30" stroke="var(--brand-line)" stroke-width="1" stroke-linecap="round" opacity="0.5" />`;
 
             for(let i=daysToShow-1; i>=0; i--) {
                 const d = new Date();
@@ -871,8 +898,9 @@
                 const cx = startX + (index * step);
                 const cy = 30;
 
-                const fillColor = isActive ? '#4A6B56' : '#F5F2EB'; 
-                const strokeColor = isActive ? '#4A6B56' : '#D4CDC1'; 
+                // Reference CSS variable names to adjust on theme flip
+                const fillColor = isActive ? '#4A6B56' : 'var(--brand-base)'; 
+                const strokeColor = isActive ? '#4A6B56' : 'var(--brand-line)'; 
                 
                 if (isActive) {
                     svghtml += `<circle cx="${cx}" cy="${cy}" r="${itemRadius}" fill="${fillColor}" />`;
@@ -884,7 +912,7 @@
                      svghtml += `<circle cx="${cx}" cy="${cy}" r="${itemRadius + 5}" fill="none" stroke="#C29A5B" stroke-width="1.5" stroke-dasharray="2 2" />`;
                 }
 
-                const textColor = isToday ? '#3A352F' : '#8C857B';
+                const textColor = isToday ? 'var(--brand-text)' : 'var(--brand-muted)';
                 const fontWeight = isToday ? 'bold' : 'normal';
                 svghtml += `<text x="${cx}" y="${cy + 30}" font-family="monospace" font-size="10" text-anchor="middle" fill="${textColor}" font-weight="${fontWeight}">${dayName}</text>`;
             }
@@ -899,3 +927,4 @@
     </script>
 </body>
 </html>
+
