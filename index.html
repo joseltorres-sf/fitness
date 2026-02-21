@@ -225,6 +225,39 @@
         </div>
     </div>
 
+    <!-- Add Bonus Exercise Modal -->
+    <div id="addExModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('addExModal')"></div>
+        <div class="relative bg-brand-base border border-brand-line w-full max-w-md industrial-shadow">
+             <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center">
+                <h3 class="font-mono text-[10px] tracking-[0.2em] text-brand-text uppercase flex items-center gap-2">
+                    <i data-lucide="plus" width="14" height="14"></i> Bonus Exercise
+                </h3>
+                <button onclick="closeModal('addExModal')"><i data-lucide="x" width="16" class="text-brand-muted"></i></button>
+            </div>
+            <div class="p-8">
+                <div class="mb-4">
+                    <label class="block font-mono text-[10px] tracking-[0.15em] text-brand-muted uppercase mb-2">Exercise Name</label>
+                    <input type="text" id="newExName" class="w-full bg-transparent border-b border-brand-line focus:border-brand-forest text-brand-text text-lg outline-none font-medium placeholder-brand-muted/30 pb-1" placeholder="e.g. Preacher Curls">
+                </div>
+                <div class="mb-6">
+                    <label class="block font-mono text-[10px] tracking-[0.15em] text-brand-muted uppercase mb-2">Target (Sets x Reps)</label>
+                    <input type="text" id="newExTarget" class="w-full bg-transparent border-b border-brand-line focus:border-brand-forest text-brand-text text-lg outline-none font-medium placeholder-brand-muted/30 pb-1" value="3 x 10-12">
+                </div>
+                <input type="hidden" id="editExId" value="">
+                
+                <div class="flex gap-2">
+                    <button type="button" id="deleteExBtn" onclick="deleteBonusExercise()" class="hidden w-1/3 border border-rust text-rust font-mono text-[10px] uppercase py-3 hover:bg-rust hover:text-white transition-colors">
+                        Delete
+                    </button>
+                    <button onclick="saveBonusExercise()" class="w-full bg-brand-text text-brand-base font-mono text-[10px] uppercase py-3 hover:opacity-80 transition-colors">
+                        Save Exercise
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Plate Calculator Modal -->
     <div id="calcModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('calcModal')"></div>
@@ -284,7 +317,7 @@
 
     <script>
         // --- APP STATE ---
-        let appData = { workouts: {}, meals: {} };
+        let appData = { workouts: {}, meals: {}, extraExercises: {} };
         const LOCAL_STORAGE_KEY = 'recomp_offline_data';
 
         const workoutData = {
@@ -394,7 +427,10 @@
             updateTabVisibility(); 
             try {
                 const local = localStorage.getItem(LOCAL_STORAGE_KEY);
-                if(local) appData = JSON.parse(local);
+                if(local) {
+                    const parsed = JSON.parse(local);
+                    appData = { ...appData, ...parsed };
+                }
             } catch (e) { console.error(e); }
             document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-brass';
             renderContent();
@@ -478,11 +514,19 @@
                     content.appendChild(div);
                 });
             } else {
+                const dateKey = getTodayDateStr();
                 const sessionExercises = workoutData[selectedDay] ? workoutData[selectedDay][activeTab] : [];
-                if (!sessionExercises || sessionExercises.length === 0) {
+                
+                if(!appData.extraExercises) appData.extraExercises = {};
+                if(!appData.extraExercises[dateKey]) appData.extraExercises[dateKey] = { AM: [], PM: [] };
+                
+                const bonusExercises = appData.extraExercises[dateKey][activeTab] || [];
+                const allExercises = [...sessionExercises, ...bonusExercises];
+
+                if (!allExercises || allExercises.length === 0) {
                     content.innerHTML = `<div class="bg-brand-base p-12 flex flex-col items-center justify-center text-brand-muted"><i data-lucide="coffee" width="32" height="32" class="mb-4 opacity-50"></i><p class="font-mono text-[10px] tracking-widest uppercase">Rest Day</p></div>`;
                 } else {
-                    sessionExercises.forEach(ex => {
+                    allExercises.forEach(ex => {
                         const key = getStorageKey(selectedDay, ex.id);
                         const todayData = appData.workouts[key] || {};
                         const history = getHistory(ex.name);
@@ -490,9 +534,14 @@
 
                         let historyHTML = '';
                         if (history) {
-                            let text = (ex.type === 'cardio') 
-                                ? `${history.sets?.[0]?.t || '-'}m / ${history.sets?.[0]?.w || '-'}spd` 
-                                : `${(history.sets||[]).map(s => s.w ? `${s.w}x${s.r}` : s.r || '-').join(', ')}`;
+                            let text = '';
+                            if (ex.type === 'cardio') {
+                                text = `${history.sets?.[0]?.t || '-'}m / ${history.sets?.[0]?.w || '-'}spd / ${history.sets?.[0]?.r || '-'}inc`;
+                            } else if (ex.type === 'reps_only' || ex.type === 'duration') {
+                                text = `${(history.sets||[]).map(s => s.r || '-').join(', ')}`;
+                            } else {
+                                text = `${(history.sets||[]).map(s => s.w ? `${s.w}x${s.r}` : s.r || '-').join(', ')}`;
+                            }
                             historyHTML = `<div class="inline-flex items-center px-2 py-1 bg-brand-surface border border-brand-line text-[10px] font-mono uppercase text-brand-muted mb-4"><div class="flex items-center gap-1.5"><i data-lucide="history" width="10" height="10"></i> <span>Last: ${text}</span></div></div>`;
                         }
 
@@ -500,13 +549,24 @@
                         for(let i=0; i<numSets; i++) {
                             const setData = (todayData.sets && todayData.sets[i]) ? todayData.sets[i] : {w:'', r:'', t:''};
                             const inputBase = "bg-transparent border-b border-brand-line focus:border-brand-forest text-center font-mono text-sm py-1 outline-none transition-colors w-full text-brand-text placeholder-brand-muted/30";
-                            let inputs = (ex.type === 'cardio') 
-                                ? `<input type="number" class="${inputBase}" placeholder="Min" value="${setData.t || ''}" onchange="saveSet('${ex.id}', ${i}, 't', this.value)">
-                                   <input type="number" class="${inputBase}" placeholder="Spd" value="${setData.w || ''}" onchange="saveSet('${ex.id}', ${i}, 'w', this.value)">`
-                                : `<input type="number" class="${inputBase} autofill-target" id="w-${ex.id}-${i}" placeholder="Lbs" value="${setData.w}" onchange="handleFirstSetAutofill('${ex.id}', 'w', this.value)">
-                                   <input type="number" class="${inputBase}" placeholder="Reps" value="${setData.r}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">`;
+                            
+                            let inputs = '';
+                            let gridCols = 'grid-cols-2';
 
-                            setsHTML += `<div class="grid grid-cols-[40px_1fr] gap-4 items-center"><span class="font-mono text-[10px] text-brand-muted text-right pr-2 border-r border-brand-line">0${i+1}</span><div class="grid grid-cols-2 gap-4">${inputs}</div></div>`;
+                            if (ex.type === 'cardio') {
+                                gridCols = 'grid-cols-3';
+                                inputs = `<input type="number" class="${inputBase}" placeholder="Min" value="${setData.t || ''}" onchange="saveSet('${ex.id}', ${i}, 't', this.value)">
+                                          <input type="number" step="0.1" class="${inputBase}" placeholder="Spd" value="${setData.w || ''}" onchange="saveSet('${ex.id}', ${i}, 'w', this.value)">
+                                          <input type="number" step="0.5" class="${inputBase}" placeholder="Inc" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">`;
+                            } else if (ex.type === 'reps_only' || ex.type === 'duration') {
+                                gridCols = 'grid-cols-1';
+                                inputs = `<input type="text" class="${inputBase}" placeholder="${ex.type === 'duration' ? 'Time' : 'Reps'}" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">`;
+                            } else {
+                                inputs = `<input type="number" class="${inputBase} autofill-target" id="w-${ex.id}-${i}" placeholder="Lbs" value="${setData.w || ''}" onchange="handleFirstSetAutofill('${ex.id}', 'w', this.value)">
+                                          <input type="number" class="${inputBase}" placeholder="Reps" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">`;
+                            }
+
+                            setsHTML += `<div class="grid grid-cols-[40px_1fr] gap-4 items-center"><span class="font-mono text-[10px] text-brand-muted text-right pr-2 border-r border-brand-line">0${i+1}</span><div class="grid ${gridCols} gap-4">${inputs}</div></div>`;
                         }
                         setsHTML += '</div>';
 
@@ -517,14 +577,30 @@
                             <button onclick="saveRating('${ex.id}', 'hard')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center ${r==='hard' ? 'bg-rust border-rust' : ''}"><span class="w-2 h-2 rounded-full ${r==='hard' ? 'bg-white' : 'bg-rust'}"></span></button>
                         </div>`;
 
+                        const titleClick = ex.isBonus ? `openAddExModal('${ex.id}')` : `openGoogleSearch('${ex.name.replace(/'/g, "\\'")}')`;
+                        const titleColor = ex.isBonus ? `text-brand-accent` : `text-brand-text`;
+                        const badge = ex.isBonus ? `<span class="ml-2 inline-block bg-brand-surface border border-brand-line text-brand-muted px-1.5 py-0.5 text-[8px] rounded-sm relative -top-0.5">BONUS</span>` : '';
+
                         const card = document.createElement('div');
                         card.className = 'bg-brand-base p-6 md:p-8';
                         card.innerHTML = `<div class="mb-4">
-                            <h3 class="text-lg font-medium text-brand-text leading-tight cursor-pointer hover:underline" onclick="openGoogleSearch('${ex.name}')">${ex.name}</h3>
+                            <h3 class="text-lg font-medium ${titleColor} leading-tight cursor-pointer hover:underline" onclick="${titleClick}">${ex.name} ${badge}</h3>
                             <p class="font-mono text-[10px] tracking-wider text-brand-muted uppercase mt-1">${ex.target}</p>
                         </div>${historyHTML}${setsHTML}${ratingHTML}`;
                         content.appendChild(card);
                     });
+
+                    // Render Add Bonus Button
+                    if (sessionExercises.length > 0 && bonusExercises.length < 3) {
+                        const addBtnContainer = document.createElement('div');
+                        addBtnContainer.className = 'p-6 bg-brand-base';
+                        addBtnContainer.innerHTML = `
+                            <button onclick="openAddExModal()" class="w-full py-4 border-2 border-dashed border-brand-line text-brand-muted hover:border-brand-text hover:text-brand-text hover:bg-brand-surface transition-colors font-mono text-[10px] tracking-widest uppercase flex items-center justify-center gap-2">
+                                <i data-lucide="plus" width="14" height="14"></i> Add Bonus Exercise (${3 - bonusExercises.length} left)
+                            </button>
+                        `;
+                        content.appendChild(addBtnContainer);
+                    }
                 }
             }
             lucide.createIcons();
@@ -533,7 +609,7 @@
         // --- HELPERS ---
         function getTodayDateStr() { return new Date().toISOString().split('T')[0]; }
         function getStorageKey(day, id) { return `${getTodayDateStr()}_${id}`; }
-        function getSetCount(targetStr, type) { return (type === 'cardio') ? 1 : (parseInt(targetStr.match(/^(\d+)/)?.[1]) || 1); }
+        function getSetCount(targetStr, type) { return (type === 'cardio') ? 1 : (parseInt(targetStr?.match(/^(\d+)/)?.[1]) || 1); }
 
         function saveData() { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appData)); showToast(); }
 
@@ -562,10 +638,97 @@
         window.handleFirstSetAutofill = function(exId, field, value) {
             saveSet(exId, 0, field, value);
             const container = document.getElementById(`sets-${exId}`);
+            if(!container) return;
             const inputs = container.querySelectorAll('.autofill-target');
             inputs.forEach((input, i) => { if(i > 0 && !input.value) { input.value = value; saveSet(exId, i, field, value); }});
         }
 
+        // --- BONUS EXERCISES LOGIC ---
+        window.openAddExModal = function(exId = null) {
+            const dateKey = getTodayDateStr();
+            const modal = document.getElementById('addExModal');
+            const nameInput = document.getElementById('newExName');
+            const targetInput = document.getElementById('newExTarget');
+            const idInput = document.getElementById('editExId');
+            const deleteBtn = document.getElementById('deleteExBtn');
+
+            if (exId) {
+                const exercises = appData.extraExercises[dateKey][activeTab] || [];
+                const ex = exercises.find(e => e.id === exId);
+                if(ex) {
+                    nameInput.value = ex.name;
+                    targetInput.value = ex.target;
+                    idInput.value = ex.id;
+                    deleteBtn.classList.remove('hidden');
+                }
+            } else {
+                nameInput.value = '';
+                targetInput.value = '3 x 10-12';
+                idInput.value = '';
+                deleteBtn.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            nameInput.focus();
+        };
+
+        window.saveBonusExercise = function() {
+            const name = document.getElementById('newExName').value.trim();
+            const target = document.getElementById('newExTarget').value.trim();
+            const exId = document.getElementById('editExId').value;
+            const dateKey = getTodayDateStr();
+
+            if (!name) return alert("Please enter an exercise name.");
+
+            if(!appData.extraExercises) appData.extraExercises = {};
+            if(!appData.extraExercises[dateKey]) appData.extraExercises[dateKey] = { AM: [], PM: [] };
+            const list = appData.extraExercises[dateKey][activeTab];
+
+            if (exId) {
+                const ex = list.find(e => e.id === exId);
+                if (ex) {
+                    ex.name = name;
+                    ex.target = target;
+                }
+            } else {
+                if (list.length >= 3) {
+                    alert("Maximum 3 bonus exercises reached.");
+                    closeModal('addExModal');
+                    return;
+                }
+                list.push({
+                    id: `bonus_${Date.now()}`,
+                    name: name,
+                    target: target || "3 x 10-12",
+                    isBonus: true
+                });
+            }
+
+            saveData();
+            closeModal('addExModal');
+            renderContent();
+        };
+
+        window.deleteBonusExercise = function() {
+            const exId = document.getElementById('editExId').value;
+            if (!exId) return;
+            
+            if(confirm("Remove this bonus exercise?")) {
+                const dateKey = getTodayDateStr();
+                const list = appData.extraExercises[dateKey][activeTab];
+                appData.extraExercises[dateKey][activeTab] = list.filter(e => e.id !== exId);
+                
+                // Cleanup orphaned sets data
+                const storageKey = getStorageKey(selectedDay, exId);
+                delete appData.workouts[storageKey];
+                
+                saveData();
+                closeModal('addExModal');
+                renderContent();
+            }
+        };
+
+        // --- UTILITIES & MODALS ---
         window.openCalcModal = () => document.getElementById('calcModal').classList.remove('hidden');
         window.openKeyModal = () => {
             document.getElementById('keyModal').classList.remove('hidden');
@@ -613,8 +776,9 @@
             Object.values(workoutData).forEach(day => { 
                 day.AM.concat(day.PM).forEach(ex => { if(ex.name === exName) matchingIds.add(ex.id); });
             });
+            // Include previously created bonus exercises with the same exact name in history
             return Object.values(appData.workouts)
-                .filter(d => matchingIds.has(d.exerciseId) && d.date !== today)
+                .filter(d => (matchingIds.has(d.exerciseId) || (d.exerciseId && d.exerciseId.startsWith('bonus_'))) && d.date !== today)
                 .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
         }
 
@@ -644,3 +808,5 @@
     </script>
 </body>
 </html>
+
+
