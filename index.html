@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- CRITICAL FOR IOS HOME SCREEN DARK MODE -->
+    <meta name="color-scheme" content="light dark">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <!-- Meta Theme Colors for Mobile Browsers -->
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F2EB">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#151413">
@@ -17,38 +23,42 @@
     <style>
         /* CSS Variables for Light/Dark Mode Switching */
         :root {
-            --brand-base: #F5F2EB;       /* Main Background */
-            --brand-surface: #EBE6DD;    /* Secondary/Hover */
-            --brand-line: #D4CDC1;       /* Borders/Grid Lines */
-            --brand-text: #3A352F;       /* Primary Text */
-            --brand-muted: #8C857B;      /* Secondary Text */
-            --brand-accent: #A4907C;     /* Accents */
-            --brand-forest: #1F3A2C;     /* Dark Interactive Green */
+            color-scheme: light dark; /* Tells the engine to support both */
+            --brand-base: #F5F2EB;       
+            --brand-surface: #EBE6DD;    
+            --brand-line: #D4CDC1;       
+            --brand-text: #3A352F;       
+            --brand-muted: #8C857B;      
+            --brand-accent: #A4907C;     
+            --brand-forest: #1F3A2C;     
             --shadow-color: rgba(58,53,47,0.05);
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --brand-base: #151413;       /* Deep Charcoal/Brown */
-                --brand-surface: #211F1D;    /* Slightly lighter surface */
-                --brand-line: #36332E;       /* Visible dark borders */
-                --brand-text: #E8E3DB;       /* Off-white text */
-                --brand-muted: #948F87;      /* Greyed text */
-                --brand-accent: #A4907C;     /* Maintained accent */
-                --brand-forest: #8FA696;     /* Muted sage for dark mode visibility */
+                --brand-base: #151413;       
+                --brand-surface: #211F1D;    
+                --brand-line: #36332E;       
+                --brand-text: #E8E3DB;       
+                --brand-muted: #948F87;      
+                --brand-accent: #A4907C;     
+                --brand-forest: #8FA696;     
                 --shadow-color: rgba(0, 0, 0, 0.4);
             }
         }
 
-        body {
+        /* Set background on HTML and Body to prevent "white flashes" on iOS */
+        html, body {
             background-color: var(--brand-base);
             color: var(--brand-text);
+        }
+
+        body {
             /* Subtle organic noise texture */
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Hard shadow for main container (Industrial Look) */
         .industrial-shadow {
             box-shadow: 8px 8px 0px 0px var(--shadow-color);
         }
@@ -60,11 +70,9 @@
         }
         @keyframes revealUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* Custom Scrollbar for Day Selector */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Remove default input styling */
         input:focus, select:focus, textarea:focus { outline: none; box-shadow: none; }
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -144,7 +152,7 @@
             </div>
         </div>
 
-        <!-- Session Type Toggles (Mechanical Look) -->
+        <!-- Session Type Toggles -->
         <div id="tabContainer" class="flex font-mono text-[10px] tracking-widest uppercase border border-brand-line bg-brand-surface w-full mb-6 industrial-shadow">
             <button onclick="setTab('AM')" id="tab-AM" class="flex-1 py-3 text-brand-muted hover:text-brand-text transition-colors border-r border-brand-line">AM Shred</button>
             <button onclick="setTab('PM')" id="tab-PM" class="flex-1 py-3 text-brand-muted hover:text-brand-text transition-colors border-r border-brand-line">PM Build</button>
@@ -173,7 +181,7 @@
     
     <!-- Info/Meal Modal -->
     <div id="infoModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('infoModal')"></div>
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('infoModal')"></div>
         <div class="relative bg-brand-base border border-brand-line w-full max-w-lg industrial-shadow p-6">
             <div class="flex justify-between items-start mb-4">
                 <h3 id="modalTitle" class="font-mono text-[12px] tracking-[0.15em] text-brand-text uppercase font-bold">Details</h3>
@@ -185,7 +193,7 @@
 
     <!-- Key/Sync Modal -->
     <div id="keyModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('keyModal')"></div>
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('keyModal')"></div>
         <div class="relative bg-brand-base border border-brand-line w-full max-w-md industrial-shadow">
             <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center">
                 <h3 class="font-mono text-[10px] tracking-[0.2em] text-brand-text uppercase flex items-center gap-2">
@@ -219,7 +227,7 @@
 
     <!-- Plate Calculator Modal -->
     <div id="calcModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('calcModal')"></div>
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('calcModal')"></div>
         <div class="relative bg-brand-base border border-brand-line w-full max-w-md industrial-shadow">
              <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center">
                 <h3 class="font-mono text-[10px] tracking-[0.2em] text-brand-text uppercase flex items-center gap-2">
@@ -246,7 +254,7 @@
 
     <!-- Stats/Consistency Modal -->
     <div id="statsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal('statsModal')"></div>
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('statsModal')"></div>
         <div class="relative bg-brand-base border border-brand-line w-full max-w-lg industrial-shadow">
              <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center">
                 <h3 class="font-mono text-[10px] tracking-[0.2em] text-brand-text uppercase flex items-center gap-2">
@@ -279,7 +287,6 @@
         let appData = { workouts: {}, meals: {} };
         const LOCAL_STORAGE_KEY = 'recomp_offline_data';
 
-        // --- DATA CONSTANTS ---
         const workoutData = {
             'Monday': {
                 AM: [
@@ -362,19 +369,16 @@
                     { id: 's_pm_5', name: 'Seated Calf Raises', target: '4 x 15-20' }
                 ]
             },
-            'Sunday': {
-                AM: [], 
-                PM: [] 
-            }
+            'Sunday': { AM: [], PM: [] }
         };
 
         const meals = [
             { id: 'm1', name: 'High-Cal Breakfast', desc: '4 Eggs, Oats, PB, Whole Milk', details: '• 4 Whole Eggs (scrambled)\n• 1.5 cups Oatmeal (cooked with whole milk)\n• 2 tbsp Peanut Butter\n• 1 Banana' },
-            { id: 'm2', name: 'Mid-Day Gainer', desc: 'Serious Mass Shake', details: '• 1 Scoop Serious Mass Protein Powder\n• 16 oz Whole Milk\n• 1 tbsp Olive Oil (for extra healthy fat calories)\n• Blend well' },
-            { id: 'm3', name: 'Bulking Lunch', desc: '8oz Ground Beef, 1.5c Rice, Veggies', details: '• 8 oz 80/20 Ground Beef\n• 1.5 cups White Rice\n• 1 cup Mixed Veggies\n• Top with olive oil or avocado' },
-            { id: 'm4', name: 'Pre-Workout Fuel', desc: 'Carbs & Fast Protein', details: '• 2 Rice Krispie Treats or 1 Large Bagel\n• 1 scoop standard Whey Isolate (water)' },
-            { id: 'm5', name: 'Post-Workout Dinner', desc: 'Chicken/Pasta Feast', details: '• 8 oz Chicken Breast or Salmon\n• 2 cups Pasta with Marinara\n• 2 slices Garlic Bread' },
-            { id: 'm6', name: 'Before Bed', desc: 'Cottage Cheese & Nuts', details: '• 1 cup Full-fat Cottage Cheese or Greek Yogurt\n• 1/4 cup Almonds or Walnuts' }
+            { id: 'm2', name: 'Mid-Day Gainer', desc: 'Serious Mass Shake', details: '• 1 Scoop Serious Mass Protein Powder\n• 16 oz Whole Milk\n• 1 tbsp Olive Oil\n• Blend well' },
+            { id: 'm3', name: 'Bulking Lunch', desc: '8oz Ground Beef, 1.5c Rice, Veggies', details: '• 8 oz 80/20 Ground Beef\n• 1.5 cups White Rice\n• 1 cup Mixed Veggies' },
+            { id: 'm4', name: 'Pre-Workout Fuel', desc: 'Carbs & Fast Protein', details: '• 2 Rice Krispie Treats or 1 Large Bagel\n• 1 scoop Whey Isolate' },
+            { id: 'm5', name: 'Post-Workout Dinner', desc: 'Chicken/Pasta Feast', details: '• 8 oz Chicken Breast or Salmon\n• 2 cups Pasta\n• 2 slices Garlic Bread' },
+            { id: 'm6', name: 'Before Bed', desc: 'Cottage Cheese & Nuts', details: '• 1 cup Cottage Cheese\n• 1/4 cup Almonds' }
         ];
 
         // --- UI STATE ---
@@ -382,31 +386,20 @@
         const shortDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
         let currentDayIdx = new Date().getDay();
         let selectedDay = days[currentDayIdx];
-        let activeTab = 'PM'; 
-        if (new Date().getHours() < 12) activeTab = 'AM';
+        let activeTab = (new Date().getHours() < 12) ? 'AM' : 'PM';
 
-        // --- INIT ---
         function init() {
             renderDaySelector();
             updateDateHeader();
             updateTabVisibility(); 
-            
-            // Load Local Data
             try {
                 const local = localStorage.getItem(LOCAL_STORAGE_KEY);
-                if(local) {
-                    appData = JSON.parse(local);
-                }
-            } catch (e) {
-                console.error("Error loading local data", e);
-            }
-            
+                if(local) appData = JSON.parse(local);
+            } catch (e) { console.error(e); }
             document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-brass';
             renderContent();
         }
 
-        // --- CORE UI FUNCTIONS ---
-        
         function updateDateHeader() {
             const today = new Date();
             const options = { weekday: 'long', month: 'long', day: 'numeric' };
@@ -419,12 +412,7 @@
             days.forEach((day, idx) => {
                 const isSelected = day === selectedDay;
                 const btn = document.createElement('button');
-                btn.className = `
-                    px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all rounded-full border 
-                    ${isSelected 
-                        ? 'bg-brand-forest text-brand-base border-brand-forest' 
-                        : 'bg-brand-base text-brand-muted border-brand-line hover:border-brand-accent'}
-                `;
+                btn.className = `px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-all rounded-full border ${isSelected ? 'bg-brand-forest text-brand-base border-brand-forest' : 'bg-brand-base text-brand-muted border-brand-line hover:border-brand-accent'}`;
                 btn.innerText = shortDays[idx];
                 btn.onclick = () => {
                     selectedDay = day;
@@ -440,11 +428,9 @@
             const amBtn = document.getElementById('tab-AM');
             const pmBtn = document.getElementById('tab-PM');
             const foodBtn = document.getElementById('tab-FOOD');
-
             if (selectedDay === 'Sunday') {
                 amBtn.style.display = 'none';
                 pmBtn.style.display = 'none';
-                foodBtn.classList.remove('border-l'); 
                 setTab('FOOD');
             } else {
                 amBtn.style.display = 'block';
@@ -454,17 +440,14 @@
 
         window.setTab = function(tabName) {
             activeTab = tabName;
-            
             ['AM', 'PM', 'FOOD'].forEach(t => {
                 const btn = document.getElementById(`tab-${t}`);
                 btn.classList.remove('bg-brand-base', 'text-brand-text');
                 btn.classList.add('text-brand-muted');
             });
-
             const activeBtn = document.getElementById(`tab-${tabName}`);
             activeBtn.classList.remove('text-brand-muted');
             activeBtn.classList.add('bg-brand-base', 'text-brand-text');
-            
             renderContent();
         }
 
@@ -472,25 +455,14 @@
             const content = document.getElementById('content');
             content.innerHTML = '';
 
-            // --- MEAL TAB ---
             if (activeTab === 'FOOD') {
                 const dateKey = getTodayDateStr();
                 const todaysMeals = appData.meals[dateKey] || {};
-                
-                if (meals.length === 0) {
-                     content.innerHTML = `<div class="bg-brand-base p-12 text-center text-brand-muted font-mono text-[10px] uppercase">No Meals Configured</div>`;
-                     return;
-                }
-
                 meals.forEach(meal => {
                     const isChecked = todaysMeals[meal.id] === true;
-                    
                     const div = document.createElement('div');
                     div.className = `bg-brand-base p-6 flex items-start gap-4 transition-colors hover:bg-brand-surface cursor-pointer group`;
-                    div.onclick = (e) => { 
-                        if(!e.target.closest('button')) toggleMeal(meal.id); 
-                    };
-
+                    div.onclick = (e) => { if(!e.target.closest('button')) toggleMeal(meal.id); };
                     div.innerHTML = `
                         <div class="mt-1 w-5 h-5 border border-brand-muted flex items-center justify-center transition-colors ${isChecked ? 'bg-brand-forest border-brand-forest' : ''}">
                             ${isChecked ? '<i data-lucide="check" class="text-white w-3 h-3"></i>' : ''}
@@ -505,348 +477,145 @@
                     `;
                     content.appendChild(div);
                 });
-                lucide.createIcons();
-                return;
-            }
+            } else {
+                const sessionExercises = workoutData[selectedDay] ? workoutData[selectedDay][activeTab] : [];
+                if (!sessionExercises || sessionExercises.length === 0) {
+                    content.innerHTML = `<div class="bg-brand-base p-12 flex flex-col items-center justify-center text-brand-muted"><i data-lucide="coffee" width="32" height="32" class="mb-4 opacity-50"></i><p class="font-mono text-[10px] tracking-widest uppercase">Rest Day</p></div>`;
+                } else {
+                    sessionExercises.forEach(ex => {
+                        const key = getStorageKey(selectedDay, ex.id);
+                        const todayData = appData.workouts[key] || {};
+                        const history = getHistory(ex.name);
+                        const numSets = getSetCount(ex.target, ex.type);
 
-            // --- WORKOUT TAB ---
-            const sessionExercises = workoutData[selectedDay] ? workoutData[selectedDay][activeTab] : [];
-            
-            if (!sessionExercises || sessionExercises.length === 0) {
-                content.innerHTML = `
-                    <div class="bg-brand-base p-12 flex flex-col items-center justify-center text-brand-muted">
-                        <i data-lucide="coffee" width="32" height="32" class="mb-4 opacity-50"></i>
-                        <p class="font-mono text-[10px] tracking-widest uppercase">Rest Day</p>
-                    </div>`;
-                lucide.createIcons();
-                return;
-            }
+                        let historyHTML = '';
+                        if (history) {
+                            let text = (ex.type === 'cardio') 
+                                ? `${history.sets?.[0]?.t || '-'}m / ${history.sets?.[0]?.w || '-'}spd` 
+                                : `${(history.sets||[]).map(s => s.w ? `${s.w}x${s.r}` : s.r || '-').join(', ')}`;
+                            historyHTML = `<div class="inline-flex items-center px-2 py-1 bg-brand-surface border border-brand-line text-[10px] font-mono uppercase text-brand-muted mb-4"><div class="flex items-center gap-1.5"><i data-lucide="history" width="10" height="10"></i> <span>Last: ${text}</span></div></div>`;
+                        }
 
-            sessionExercises.forEach(ex => {
-                const key = getStorageKey(selectedDay, ex.id);
-                const todayData = appData.workouts[key] || {};
-                
-                const history = getHistory(ex.name);
-                const numSets = getSetCount(ex.target, ex.type);
+                        let setsHTML = `<div class="flex flex-col gap-2 mb-4" id="sets-${ex.id}">`;
+                        for(let i=0; i<numSets; i++) {
+                            const setData = (todayData.sets && todayData.sets[i]) ? todayData.sets[i] : {w:'', r:'', t:''};
+                            const inputBase = "bg-transparent border-b border-brand-line focus:border-brand-forest text-center font-mono text-sm py-1 outline-none transition-colors w-full text-brand-text placeholder-brand-muted/30";
+                            let inputs = (ex.type === 'cardio') 
+                                ? `<input type="number" class="${inputBase}" placeholder="Min" value="${setData.t || ''}" onchange="saveSet('${ex.id}', ${i}, 't', this.value)">
+                                   <input type="number" class="${inputBase}" placeholder="Spd" value="${setData.w || ''}" onchange="saveSet('${ex.id}', ${i}, 'w', this.value)">`
+                                : `<input type="number" class="${inputBase} autofill-target" id="w-${ex.id}-${i}" placeholder="Lbs" value="${setData.w}" onchange="handleFirstSetAutofill('${ex.id}', 'w', this.value)">
+                                   <input type="number" class="${inputBase}" placeholder="Reps" value="${setData.r}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">`;
 
-                // History Pill
-                let historyHTML = '';
-                if (history) {
-                    let text = '';
-                    if (ex.type === 'cardio') {
-                        const h = history.sets?.[0] || {};
-                        text = `${h.t || '-'}m / ${h.w || '-'}spd / ${h.r || '-'}inc`;
-                    }
-                    else if (ex.type === 'duration' || ex.type === 'reps_only') text = `${(history.sets||[]).map(s=>s.r).join(', ')}`;
-                    else text = `${(history.sets||[]).map(s => s.w ? `${s.w}x${s.r}` : '-').join(', ')}`;
-                    
-                    let ratingIndicator = '';
-                    if (history.rating) {
-                        let dotColor = history.rating === 'easy' ? 'bg-forest-500' : (history.rating === 'med' ? 'bg-brass' : 'bg-rust');
-                        let ratingLabel = history.rating.toUpperCase();
-                        ratingIndicator = `<div class="flex items-center gap-1.5 ml-2 pl-2 border-l border-brand-line"><span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span><span>${ratingLabel}</span></div>`;
-                    }
+                            setsHTML += `<div class="grid grid-cols-[40px_1fr] gap-4 items-center"><span class="font-mono text-[10px] text-brand-muted text-right pr-2 border-r border-brand-line">0${i+1}</span><div class="grid grid-cols-2 gap-4">${inputs}</div></div>`;
+                        }
+                        setsHTML += '</div>';
 
-                    historyHTML = `
-                        <div class="inline-flex items-center px-2 py-1 bg-brand-surface border border-brand-line text-[10px] font-mono uppercase text-brand-muted mb-4">
-                            <div class="flex items-center gap-1.5"><i data-lucide="history" width="10" height="10"></i> <span>Last: ${text}</span></div>
-                            ${ratingIndicator}
-                        </div>
-                    `;
-                }
+                        const r = todayData.rating;
+                        const ratingHTML = `<div class="flex justify-end gap-2 mt-2">
+                            <button onclick="saveRating('${ex.id}', 'easy')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center ${r==='easy' ? 'bg-forest-500 border-forest-500' : ''}"><span class="w-2 h-2 rounded-full ${r==='easy' ? 'bg-white' : 'bg-forest-500'}"></span></button>
+                            <button onclick="saveRating('${ex.id}', 'med')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center ${r==='med' ? 'bg-brass border-brass' : ''}"><span class="w-2 h-2 rounded-full ${r==='med' ? 'bg-white' : 'bg-brass'}"></span></button>
+                            <button onclick="saveRating('${ex.id}', 'hard')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center ${r==='hard' ? 'bg-rust border-rust' : ''}"><span class="w-2 h-2 rounded-full ${r==='hard' ? 'bg-white' : 'bg-rust'}"></span></button>
+                        </div>`;
 
-                // Sets Generation
-                let setsHTML = `<div class="flex flex-col gap-2 mb-4" id="sets-${ex.id}">`;
-                for(let i=0; i<numSets; i++) {
-                    const setNum = i + 1;
-                    const setData = (todayData.sets && todayData.sets[i]) ? todayData.sets[i] : {w:'', r:'', t:''};
-                    const touchedAttr = setData.w || setData.r || setData.t ? 'data-touched="true"' : 'data-touched="false"';
-                    
-                    const inputBase = "bg-transparent border-b border-brand-line focus:border-brand-forest text-center font-mono text-sm py-1 outline-none transition-colors w-full text-brand-text placeholder-brand-muted/30";
-
-                    let rowContent = '';
-                    
-                    if (ex.type === 'cardio') {
-                        rowContent = `
-                            <input type="number" class="${inputBase}" placeholder="Min" value="${setData.t || ''}" onchange="saveSet('${ex.id}', ${i}, 't', this.value)">
-                            <input type="number" class="${inputBase}" placeholder="Spd" value="${setData.w || ''}" onchange="saveSet('${ex.id}', ${i}, 'w', this.value)">
-                            <input type="number" class="${inputBase}" placeholder="Inc" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">
-                        `;
-                    } else if (ex.type === 'duration') {
-                         const timeObj = parseDuration(setData.r);
-                         rowContent = `
-                            <div class="flex gap-2 w-full" id="dur-${ex.id}-${i}" ${touchedAttr}>
-                                <input type="number" class="${inputBase} dur-min" placeholder="Min" value="${timeObj.m}" oninput="handleDurationInput('${ex.id}', ${i}, 'm', this.value)">
-                                <span class="text-brand-muted">:</span>
-                                <input type="number" class="${inputBase} dur-sec" placeholder="Sec" value="${timeObj.s}" oninput="handleDurationInput('${ex.id}', ${i}, 's', this.value)">
-                            </div>
-                         `;
-                    } else if (ex.type === 'reps_only') {
-                         rowContent = `
-                            <input type="number" class="${inputBase}" placeholder="Reps" value="${setData.r}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">
-                         `;
-                    } else {
-                        const weightEvent = i === 0 ? `onchange="handleFirstSetAutofill('${ex.id}', 'w', this.value)"` : `onchange="saveSet('${ex.id}', ${i}, 'w', this.value); markTouched('${ex.id}', ${i})"`;
-                        rowContent = `
-                            <input type="number" class="${inputBase} autofill-target" id="w-${ex.id}-${i}" placeholder="Lbs" value="${setData.w}" ${touchedAttr} ${weightEvent}>
-                            <input type="number" class="${inputBase}" placeholder="Reps" value="${setData.r}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">
-                        `;
-                    }
-
-                    // Adjust column layout based on type
-                    let gridClass = ex.type === 'cardio' ? 'grid-cols-3 gap-2' : (ex.type === undefined ? 'grid-cols-2 gap-4' : 'grid-cols-1');
-
-                    setsHTML += `
-                        <div class="grid grid-cols-[40px_1fr] gap-4 items-center">
-                            <span class="font-mono text-[10px] text-brand-muted text-right pr-2 border-r border-brand-line">0${setNum}</span>
-                            <div class="grid ${gridClass}">
-                                ${rowContent}
-                            </div>
-                        </div>
-                    `;
-                }
-                setsHTML += '</div>';
-
-                // Rating Dots
-                const r = todayData.rating;
-                const ratingHTML = `
-                    <div class="flex justify-end gap-2 mt-2">
-                        <button onclick="saveRating('${ex.id}', 'easy')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center transition-all ${r==='easy' ? 'bg-forest-500 border-forest-500 text-white' : 'hover:bg-brand-surface'}">
-                            <span class="block w-2 h-2 rounded-full ${r==='easy' ? 'bg-white' : 'bg-forest-500'}"></span>
-                        </button>
-                        <button onclick="saveRating('${ex.id}', 'med')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center transition-all ${r==='med' ? 'bg-brass border-brass text-white' : 'hover:bg-brand-surface'}">
-                             <span class="block w-2 h-2 rounded-full ${r==='med' ? 'bg-white' : 'bg-brass'}"></span>
-                        </button>
-                        <button onclick="saveRating('${ex.id}', 'hard')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center transition-all ${r==='hard' ? 'bg-rust border-rust text-white' : 'hover:bg-brand-surface'}">
-                             <span class="block w-2 h-2 rounded-full ${r==='hard' ? 'bg-white' : 'bg-rust'}"></span>
-                        </button>
-                    </div>
-                `;
-
-                // Main Card Construction
-                const card = document.createElement('div');
-                card.className = 'bg-brand-base p-6 md:p-8';
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="text-lg font-medium text-brand-text leading-tight cursor-pointer hover:underline decoration-brand-muted underline-offset-4" onclick="openGoogleSearch('${ex.name.replace(/'/g, "\\'")}')">${ex.name}</h3>
+                        const card = document.createElement('div');
+                        card.className = 'bg-brand-base p-6 md:p-8';
+                        card.innerHTML = `<div class="mb-4">
+                            <h3 class="text-lg font-medium text-brand-text leading-tight cursor-pointer hover:underline" onclick="openGoogleSearch('${ex.name}')">${ex.name}</h3>
                             <p class="font-mono text-[10px] tracking-wider text-brand-muted uppercase mt-1">${ex.target}</p>
-                        </div>
-                    </div>
-                    ${historyHTML}
-                    ${setsHTML}
-                    ${ratingHTML}
-                `;
-                content.appendChild(card);
-            });
+                        </div>${historyHTML}${setsHTML}${ratingHTML}`;
+                        content.appendChild(card);
+                    });
+                }
+            }
             lucide.createIcons();
         }
 
-        // --- HELPERS & LOGIC ---
-        
+        // --- HELPERS ---
         function getTodayDateStr() { return new Date().toISOString().split('T')[0]; }
         function getStorageKey(day, id) { return `${getTodayDateStr()}_${id}`; }
-        
-        function getSetCount(targetStr, type) {
-            if(type === 'cardio') return 1;
-            const match = targetStr.match(/^(\d+)/);
-            return (match && match[1]) ? parseInt(match[1]) : 1;
-        }
+        function getSetCount(targetStr, type) { return (type === 'cardio') ? 1 : (parseInt(targetStr.match(/^(\d+)/)?.[1]) || 1); }
 
-        function parseDuration(val) {
-            if (!val) return { m: '', s: '' };
-            if (!val.toString().includes(':')) {
-                const secs = parseInt(val);
-                if (!isNaN(secs)) return { m: Math.floor(secs / 60) || '', s: (secs % 60).toString().padStart(2, '0') };
-                return { m: '', s: '' };
-            }
-            const parts = val.split(':');
-            return { m: parts[0], s: parts[1] };
-        }
-
-        // Save Functions
-        function saveData() {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appData));
-            showToast();
-        }
+        function saveData() { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appData)); showToast(); }
 
         window.saveSet = function(exId, setIndex, field, value) {
             const key = getStorageKey(selectedDay, exId);
-            let data = appData.workouts[key] ? JSON.parse(JSON.stringify(appData.workouts[key])) : {};
-            if(!data.sets) data.sets = [];
-            if(!data.sets[setIndex]) data.sets[setIndex] = {w:'', r:'', t:''};
-            data.sets[setIndex][field] = value;
-            data.timestamp = Date.now();
-            data.date = getTodayDateStr();
-            data.exerciseId = exId;
-            appData.workouts[key] = data;
+            if(!appData.workouts[key]) appData.workouts[key] = { sets: [], date: getTodayDateStr(), exerciseId: exId };
+            if(!appData.workouts[key].sets[setIndex]) appData.workouts[key].sets[setIndex] = {w:'', r:'', t:''};
+            appData.workouts[key].sets[setIndex][field] = value;
             saveData();
         }
 
         window.saveRating = function(exId, rating) {
             const key = getStorageKey(selectedDay, exId);
-            let data = appData.workouts[key] ? JSON.parse(JSON.stringify(appData.workouts[key])) : {};
-            data.rating = rating;
-            data.date = getTodayDateStr();
-            data.exerciseId = exId;
-            appData.workouts[key] = data;
-            renderContent(); 
-            saveData();
+            if(!appData.workouts[key]) appData.workouts[key] = { sets: [], date: getTodayDateStr(), exerciseId: exId };
+            appData.workouts[key].rating = rating;
+            renderContent(); saveData();
         }
 
         window.toggleMeal = function(mealId) {
             const dateKey = getTodayDateStr();
-            let data = appData.meals[dateKey] ? JSON.parse(JSON.stringify(appData.meals[dateKey])) : {};
-            data[mealId] = !data[mealId];
-            appData.meals[dateKey] = data;
-            renderContent();
-            saveData();
+            if(!appData.meals[dateKey]) appData.meals[dateKey] = {};
+            appData.meals[dateKey][mealId] = !appData.meals[dateKey][mealId];
+            renderContent(); saveData();
         }
 
-        // Auto-fill Logic
         window.handleFirstSetAutofill = function(exId, field, value) {
             saveSet(exId, 0, field, value);
             const container = document.getElementById(`sets-${exId}`);
             const inputs = container.querySelectorAll('.autofill-target');
-            for (let i = 1; i < inputs.length; i++) {
-                const input = inputs[i];
-                if (input.getAttribute('data-touched') !== 'true') {
-                    input.value = value;
-                    saveSet(exId, i, field, value);
-                }
-            }
-        }
-        
-        window.markTouched = function(exId, index) {
-            const el = document.getElementById(`w-${exId}-${index}`);
-            if(el) el.setAttribute('data-touched', 'true');
+            inputs.forEach((input, i) => { if(i > 0 && !input.value) { input.value = value; saveSet(exId, i, field, value); }});
         }
 
-        window.handleDurationInput = function(exId, index, type, val) {
-            const container = document.getElementById(`dur-${exId}-${index}`);
-            container.setAttribute('data-touched', 'true');
-            const m = container.querySelector('.dur-min').value;
-            const s = container.querySelector('.dur-sec').value;
-            const combined = `${m || '0'}:${s.toString().padStart(2, '0')}`;
-            saveSet(exId, index, 'r', combined);
-        }
-
-        // Modals
         window.openCalcModal = () => document.getElementById('calcModal').classList.remove('hidden');
-        
         window.openKeyModal = () => {
             document.getElementById('keyModal').classList.remove('hidden');
-            try {
-                const dataString = btoa(JSON.stringify(appData));
-                document.getElementById('currentKeyDisplay').innerText = dataString;
-            } catch(e) {
-                document.getElementById('currentKeyDisplay').innerText = "Error generating key.";
-            }
+            document.getElementById('currentKeyDisplay').innerText = btoa(JSON.stringify(appData));
         };
-
         window.openMealInfo = (e, id) => {
-            e.stopPropagation();
             const meal = meals.find(m => m.id === id);
             document.getElementById('modalTitle').innerText = meal.name;
             document.getElementById('modalBody').innerText = meal.details;
             document.getElementById('infoModal').classList.remove('hidden');
         };
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
-        
         window.openGoogleSearch = (term) => window.open('https://www.google.com/search?q=' + encodeURIComponent(term), '_blank');
-
-        // Utils
-        window.copyKey = () => {
-            const text = document.getElementById('currentKeyDisplay').innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Key Copied! Paste this code in the other device to restore your data.');
-            });
-        };
+        window.copyKey = () => { navigator.clipboard.writeText(document.getElementById('currentKeyDisplay').innerText).then(() => alert('Key Copied!')); };
 
         window.recoverData = () => {
-            const input = document.getElementById('recoverKeyInput').value.trim();
-            if(input.length < 10) {
-                alert("Invalid Key (Too Short)");
-                return;
-            }
-            
             try {
-                const parsed = JSON.parse(atob(input));
-                if(parsed && typeof parsed === 'object') {
-                    if(confirm("This will overwrite your current data. Continue?")) {
-                        appData = parsed;
-                        saveData();
-                        alert("Data Imported Successfully!");
-                        window.location.reload();
-                    }
-                } else {
-                    throw new Error("Invalid format");
-                }
-            } catch(e) { 
-                alert("Invalid Backup Key. Please ensure you copied the entire string."); 
-                console.error(e);
-            }
+                const parsed = JSON.parse(atob(document.getElementById('recoverKeyInput').value.trim()));
+                if(confirm("Overwrite data?")) { appData = parsed; saveData(); window.location.reload(); }
+            } catch(e) { alert("Invalid Key"); }
         };
-        
+
         window.calculatePlates = () => {
             const val = parseInt(document.getElementById('targetWeight').value);
-            const resultEl = document.getElementById('calcResult');
-            const visualEl = document.getElementById('platesVisual');
-            
-            if(!val || val < 45) {
-                resultEl.innerText = "Minimum weight is 45lbs";
-                visualEl.innerHTML = '';
-                return;
-            }
-            
+            const res = document.getElementById('calcResult');
+            const vis = document.getElementById('platesVisual');
+            if(!val || val < 45) { res.innerText = "> 45lbs"; vis.innerHTML = ''; return; }
             let weight = (val - 45) / 2;
-            const plates = [45, 35, 25, 10, 5, 2.5];
-            let plateHtml = '';
-            let summary = [];
-            
-            plates.forEach(p => {
+            let html = '';
+            [45, 35, 25, 10, 5, 2.5].forEach(p => {
                 while(weight >= p) {
                     weight -= p;
-                    summary.push(p);
-                    
-                    let h = 'h-24', w = 'w-4', c = 'bg-brand-text';
-                    
-                    if(p===45) { h='h-24'; c='bg-brand-text'; }
-                    else if(p===35) { h='h-20'; c='bg-brand-text/90'; }
-                    else if(p===25) { h='h-16'; c='bg-brand-text/80'; }
-                    else if(p===10) { h='h-12'; c='bg-brand-muted'; }
-                    else if(p===5)  { h='h-8';  c='bg-brass'; }
-                    else if(p===2.5){ h='h-6';  c='bg-rust'; }
-                    
-                    plateHtml += `<div class="${h} ${w} ${c} rounded-[2px] shadow-sm flex-shrink-0 relative z-10"></div>`;
+                    let h = (p === 45) ? 'h-24' : (p === 35) ? 'h-20' : (p === 25) ? 'h-16' : (p === 10) ? 'h-12' : (p === 5) ? 'h-8' : 'h-6';
+                    let c = (p === 5) ? 'bg-brass' : (p === 2.5) ? 'bg-rust' : 'bg-brand-text';
+                    html += `<div class="${h} w-4 ${c} rounded shadow-sm z-10"></div>`;
                 }
             });
-            
-            resultEl.innerText = `${summary.length} plates per side`;
-            
-            const barHtml = `<div class="absolute w-full h-3 bg-brand-line rounded-full z-0 top-1/2 -translate-y-1/2"></div>`;
-            
-            visualEl.className = "relative flex items-center justify-center gap-1 h-32 w-full overflow-x-auto hide-scrollbar px-4";
-            visualEl.innerHTML = barHtml + `<div class="flex items-center gap-1.5 z-10 relative">${plateHtml}</div>`;
+            res.innerText = "Plates per side";
+            vis.innerHTML = `<div class="absolute w-full h-3 bg-brand-line rounded-full top-1/2 -translate-y-1/2"></div><div class="flex items-center gap-1.5 z-10 relative">${html}</div>`;
         };
 
         function getHistory(exName) {
-            const todayStr = getTodayDateStr();
-            const matches = [];
-
+            const today = getTodayDateStr();
             const matchingIds = new Set();
-            Object.values(workoutData).forEach(day => {
-                if (day.AM) day.AM.forEach(ex => { if(ex.name === exName) matchingIds.add(ex.id) });
-                if (day.PM) day.PM.forEach(ex => { if(ex.name === exName) matchingIds.add(ex.id) });
+            Object.values(workoutData).forEach(day => { 
+                day.AM.concat(day.PM).forEach(ex => { if(ex.name === exName) matchingIds.add(ex.id); });
             });
-
-            Object.values(appData.workouts).forEach(d => {
-                if (matchingIds.has(d.exerciseId) && d.date !== todayStr) {
-                    matches.push(d);
-                }
-            });
-
-            return matches.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            return Object.values(appData.workouts)
+                .filter(d => matchingIds.has(d.exerciseId) && d.date !== today)
+                .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
         }
 
         function showToast() {
@@ -857,73 +626,21 @@
 
         window.openStatsModal = () => {
             document.getElementById('statsModal').classList.remove('hidden');
-            renderStatsGraph();
+            const container = document.getElementById('statsGraph');
+            const activeDates = new Set([...Object.values(appData.workouts).map(w => w.date), ...Object.keys(appData.meals).filter(d => Object.values(appData.meals[d]).some(v => v))]);
+            let svg = `<svg width="100%" height="80" viewBox="0 0 320 80"><line x1="40" y1="30" x2="280" y2="30" stroke="var(--brand-line)" opacity="0.5" />`;
+            for(let i=6; i>=0; i--) {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                const ds = d.toISOString().split('T')[0];
+                const active = activeDates.has(ds);
+                const x = 40 + ((6-i) * 40);
+                svg += `<circle cx="${x}" cy="30" r="12" fill="${active ? '#4A6B56' : 'var(--brand-base)'}" stroke="var(--brand-line)" stroke-width="2" />`;
+                svg += `<text x="${x}" y="60" text-anchor="middle" fill="var(--brand-muted)" font-size="10" font-family="monospace">${d.toLocaleDateString('en-US', {weekday:'narrow'})}</text>`;
+            }
+            container.innerHTML = svg + `</svg>`;
         };
 
-        function renderStatsGraph() {
-            const container = document.getElementById('statsGraph');
-            const today = new Date();
-            const daysToShow = 7;
-            
-            const activeDates = new Set();
-            
-            Object.values(appData.workouts).forEach(w => activeDates.add(w.date));
-            Object.keys(appData.meals).forEach(date => {
-                 const mData = appData.meals[date];
-                 if(Object.values(mData).some(v => v === true)) activeDates.add(date);
-            });
-
-            const width = 320;
-            const height = 80;
-            const itemRadius = 12;
-            const gap = 24; 
-            
-            const step = 40; 
-            const startX = (width - (step * (daysToShow - 1))) / 2;
-            
-            let svghtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">`;
-            
-            // Draw baseline using CSS variables to respond to dark mode automatically
-            svghtml += `<line x1="${startX}" y1="30" x2="${startX + (step * (daysToShow - 1))}" y2="30" stroke="var(--brand-line)" stroke-width="1" stroke-linecap="round" opacity="0.5" />`;
-
-            for(let i=daysToShow-1; i>=0; i--) {
-                const d = new Date();
-                d.setDate(today.getDate() - i);
-                const dateStr = d.toISOString().split('T')[0];
-                const dayName = d.toLocaleDateString('en-US', { weekday: 'narrow' }); 
-                const isActive = activeDates.has(dateStr);
-                const isToday = i === 0;
-
-                const index = (daysToShow - 1) - i; 
-                const cx = startX + (index * step);
-                const cy = 30;
-
-                // Reference CSS variable names to adjust on theme flip
-                const fillColor = isActive ? '#4A6B56' : 'var(--brand-base)'; 
-                const strokeColor = isActive ? '#4A6B56' : 'var(--brand-line)'; 
-                
-                if (isActive) {
-                    svghtml += `<circle cx="${cx}" cy="${cy}" r="${itemRadius}" fill="${fillColor}" />`;
-                } else {
-                    svghtml += `<circle cx="${cx}" cy="${cy}" r="${itemRadius}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" />`;
-                }
-                
-                if(isToday) {
-                     svghtml += `<circle cx="${cx}" cy="${cy}" r="${itemRadius + 5}" fill="none" stroke="#C29A5B" stroke-width="1.5" stroke-dasharray="2 2" />`;
-                }
-
-                const textColor = isToday ? 'var(--brand-text)' : 'var(--brand-muted)';
-                const fontWeight = isToday ? 'bold' : 'normal';
-                svghtml += `<text x="${cx}" y="${cy + 30}" font-family="monospace" font-size="10" text-anchor="middle" fill="${textColor}" font-weight="${fontWeight}">${dayName}</text>`;
-            }
-            
-            svghtml += `</svg>`;
-            container.innerHTML = svghtml;
-        }
-
-        // Start
         init();
-
     </script>
 </body>
 </html>
