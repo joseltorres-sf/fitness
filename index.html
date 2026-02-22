@@ -137,8 +137,8 @@
                 <i data-lucide="heart" width="18" height="18"></i>
                 <span id="consistency-dot" class="absolute -top-1 -right-1 w-2 h-2 rounded-full opacity-0 transition-all duration-500 shadow-sm"></span>
             </button>
-            <button onclick="openKeyModal()" class="text-brand-muted hover:text-brand-text transition-colors" title="Sync Settings">
-                <i data-lucide="arrow-left-right" width="18" height="18"></i>
+            <button onclick="openSettingsModal()" class="text-brand-muted hover:text-brand-text transition-colors" title="Settings & Sync">
+                <i data-lucide="settings" width="18" height="18"></i>
             </button>
         </div>
     </div>
@@ -207,36 +207,116 @@
         </div>
     </div>
 
-    <!-- Key/Sync Modal -->
-    <div id="keyModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('keyModal')"></div>
-        <div class="relative bg-brand-base border border-brand-line w-full max-w-md industrial-shadow">
-            <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center">
+    <!-- Settings / Key Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('settingsModal')"></div>
+        <div class="relative bg-brand-base border border-brand-line w-full max-w-md industrial-shadow flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center shrink-0">
                 <h3 class="font-mono text-[10px] tracking-[0.2em] text-brand-text uppercase flex items-center gap-2">
-                    <i data-lucide="arrow-left-right" width="14" height="14"></i> Transfer Data
+                    <i data-lucide="settings" width="14" height="14"></i> System Settings
                 </h3>
-                <button onclick="closeModal('keyModal')"><i data-lucide="x" width="16" class="text-brand-muted"></i></button>
+                <button onclick="closeModal('settingsModal')"><i data-lucide="x" width="16" class="text-brand-muted"></i></button>
             </div>
-            <div class="p-8">
-                <p class="font-mono text-[10px] tracking-wide text-brand-muted uppercase mb-2">Export Data Key</p>
-                <div class="bg-brand-surface p-3 border border-brand-line font-mono text-xs text-center text-brand-text mb-4 break-all max-h-24 overflow-hidden relative">
-                    <div id="currentKeyDisplay" class="opacity-50 blur-[2px] hover:blur-none transition-all cursor-text">
-                        Generating...
-                    </div>
-                </div>
-                <button onclick="copyKey()" class="w-full bg-brand-text text-brand-base font-mono text-[10px] uppercase py-3 hover:opacity-80 transition-colors mb-6 flex items-center justify-center gap-2">
-                    <i data-lucide="copy" width="12" height="12"></i> Copy Key to Clipboard
-                </button>
+            
+            <!-- Tabs -->
+            <div class="flex border-b border-brand-line shrink-0 font-mono text-[10px] uppercase tracking-widest bg-brand-surface">
+                <button onclick="setSettingsTab('routine')" id="tab-s-routine" class="flex-1 py-3 text-brand-text bg-brand-base border-r border-transparent transition-colors">Edit Routine</button>
+                <button onclick="setSettingsTab('data')" id="tab-s-data" class="flex-1 py-3 text-brand-muted border-l border-brand-line hover:text-brand-text transition-colors">Data Sync</button>
+            </div>
+
+            <div class="p-6 overflow-y-auto hide-scrollbar flex-1 relative">
                 
-                <div class="border-t border-brand-line pt-6">
-                    <p class="font-mono text-[10px] tracking-wide text-brand-muted uppercase mb-2">Import Data Key</p>
-                    <div class="flex items-center border-b border-brand-line py-1 mb-4">
-                        <input type="text" id="recoverKeyInput" class="w-full bg-transparent text-brand-text font-mono text-sm outline-none placeholder-brand-muted/50" placeholder="PASTE KEY HERE">
+                <!-- ROUTINE EDITOR TAB -->
+                <div id="content-s-routine" class="block">
+                    <!-- Target Selectors -->
+                    <div class="flex gap-2 mb-6 border-b border-brand-line pb-4">
+                        <select id="editDaySelect" onchange="renderRoutineEditor()" class="w-full bg-brand-surface border border-brand-line p-2 font-mono text-xs outline-none text-brand-text focus:border-brand-text">
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                            <option value="Saturday">Saturday</option>
+                            <option value="Sunday">Sunday</option>
+                        </select>
+                        <select id="editSessionSelect" onchange="renderRoutineEditor()" class="w-full bg-brand-surface border border-brand-line p-2 font-mono text-xs outline-none text-brand-text focus:border-brand-text">
+                            <option value="AM">AM Shred</option>
+                            <option value="PM">PM Build</option>
+                        </select>
                     </div>
-                    <button onclick="recoverData()" class="w-full border border-brand-text text-brand-text font-mono text-[10px] uppercase py-3 hover:bg-brand-surface transition-colors">
-                        Import & Overwrite
-                    </button>
+
+                    <!-- Existing Exercises -->
+                    <div class="mb-4">
+                        <p class="font-mono text-[10px] tracking-wide text-brand-muted uppercase mb-2">Current Protocol</p>
+                        <div id="editExerciseList" class="flex flex-col gap-2">
+                            <!-- JS Injected -->
+                        </div>
+                    </div>
+
+                    <!-- Add New Form -->
+                    <div class="border border-brand-line bg-brand-surface p-4 mt-6">
+                        <p class="font-mono text-[10px] tracking-[0.1em] text-brand-text font-bold uppercase mb-4 flex items-center gap-1.5"><i data-lucide="plus" width="12"></i> Add Custom Exercise</p>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block font-mono text-[9px] uppercase text-brand-muted mb-1">Name</label>
+                                <input type="text" id="editExName" class="w-full bg-brand-base border border-brand-line focus:border-brand-text text-brand-text text-sm p-2 outline-none font-medium placeholder-brand-muted/30" placeholder="e.g. Muscle-ups">
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block font-mono text-[9px] uppercase text-brand-muted mb-1">Target / Goal</label>
+                                    <input type="text" id="editExTarget" class="w-full bg-brand-base border border-brand-line focus:border-brand-text text-brand-text text-sm p-2 outline-none font-medium placeholder-brand-muted/30" placeholder="3 x 10">
+                                </div>
+                                <div>
+                                    <label class="block font-mono text-[9px] uppercase text-brand-muted mb-1">Format Type</label>
+                                    <select id="editExType" class="w-full bg-brand-base border border-brand-line focus:border-brand-text text-brand-text text-xs p-2 outline-none font-mono h-[38px]">
+                                        <option value="strength">Weights + Reps</option>
+                                        <option value="reps_only">Bodyweight/Reps</option>
+                                        <option value="cardio">Cardio (Spd/Inc)</option>
+                                        <option value="duration">Timed/Duration</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button onclick="saveRoutineExercise()" class="w-full bg-brand-text text-brand-base font-mono text-[10px] uppercase py-3 mt-2 hover:opacity-80 transition-colors">
+                                Add to Session
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Reset Master Button -->
+                    <div class="mt-8 pt-4 border-t border-brand-line text-center">
+                        <button onclick="resetRoutineToDefault()" class="text-[9px] font-mono uppercase tracking-widest text-rust hover:underline">
+                            Danger: Reset Protocol to Default
+                        </button>
+                    </div>
                 </div>
+
+                <!-- DATA SYNC TAB -->
+                <div id="content-s-data" class="hidden">
+                    <p class="font-mono text-[10px] tracking-wide text-brand-muted uppercase mb-2">Export Data Key</p>
+                    <div class="bg-brand-surface p-3 border border-brand-line font-mono text-xs text-center text-brand-text mb-4 break-all max-h-24 overflow-hidden relative">
+                        <div id="currentKeyDisplay" class="opacity-50 blur-[2px] hover:blur-none transition-all cursor-text">
+                            Generating...
+                        </div>
+                    </div>
+                    <button onclick="copyKey()" class="w-full bg-brand-text text-brand-base font-mono text-[10px] uppercase py-3 hover:opacity-80 transition-colors mb-6 flex items-center justify-center gap-2">
+                        <i data-lucide="copy" width="12" height="12"></i> Copy Key to Clipboard
+                    </button>
+                    
+                    <div class="border-t border-brand-line pt-6">
+                        <p class="font-mono text-[10px] tracking-wide text-brand-muted uppercase mb-2">Import Data Key</p>
+                        <p class="text-xs text-brand-muted mb-3">Paste a key to overwrite your history and routine modifications.</p>
+                        <div class="flex items-center border-b border-brand-line py-1 mb-4">
+                            <input type="text" id="recoverKeyInput" class="w-full bg-transparent text-brand-text font-mono text-sm outline-none placeholder-brand-muted/50" placeholder="PASTE KEY HERE">
+                        </div>
+                        <button onclick="recoverData()" class="w-full border border-brand-text text-brand-text font-mono text-[10px] uppercase py-3 hover:bg-brand-surface transition-colors">
+                            Import & Overwrite
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -252,13 +332,14 @@
                 <button onclick="closeModal('addExModal')"><i data-lucide="x" width="16" class="text-brand-muted"></i></button>
             </div>
             <div class="p-8">
+                <p class="text-xs text-brand-muted mb-4 border-b border-brand-line pb-4">Bonus exercises are temporary additions for today's session only. Use Settings > Edit Routine to permanently modify your protocol.</p>
                 <div class="mb-4">
                     <label class="block font-mono text-[10px] tracking-[0.15em] text-brand-muted uppercase mb-2">Exercise Name</label>
-                    <input type="text" id="newExName" class="w-full bg-transparent border-b border-brand-line focus:border-brand-forest text-brand-text text-lg outline-none font-medium placeholder-brand-muted/30 pb-1" placeholder="e.g. Preacher Curls">
+                    <input type="text" id="newExName" class="w-full bg-transparent border-b border-brand-line focus:border-brand-text text-brand-text text-lg outline-none font-medium placeholder-brand-muted/30 pb-1" placeholder="e.g. Preacher Curls">
                 </div>
                 <div class="mb-6">
                     <label class="block font-mono text-[10px] tracking-[0.15em] text-brand-muted uppercase mb-2">Target (Sets x Reps)</label>
-                    <input type="text" id="newExTarget" class="w-full bg-transparent border-b border-brand-line focus:border-brand-forest text-brand-text text-lg outline-none font-medium placeholder-brand-muted/30 pb-1" value="3 x 10-12">
+                    <input type="text" id="newExTarget" class="w-full bg-transparent border-b border-brand-line focus:border-brand-text text-brand-text text-lg outline-none font-medium placeholder-brand-muted/30 pb-1" value="3 x 10-12">
                 </div>
                 <input type="hidden" id="editExId" value="">
                 
@@ -267,7 +348,7 @@
                         Delete
                     </button>
                     <button type="button" onclick="saveBonusExercise()" class="w-full bg-brand-text text-brand-base font-mono text-[10px] uppercase py-3 hover:opacity-80 transition-colors">
-                        Save Exercise
+                        Save Bonus Exercise
                     </button>
                 </div>
             </div>
@@ -336,26 +417,29 @@
         // --- APP STATE ---
         let appData = { workouts: {}, meals: {}, extraExercises: {} };
         const LOCAL_STORAGE_KEY = 'recomp_offline_data';
+        const CUSTOM_ROUTINE_KEY = 'recomp_custom_routine';
 
-        const workoutData = {
+        const defaultWorkoutData = {
             'Monday': {
                 AM: [
-                    { id: 'm_am_1', name: 'DB Lateral Raises', target: '4 x 15-20', type: 'reps_only' },
-                    { id: 'm_am_2', name: 'Barbell Bicep Curls', target: '3 x 10-12' },
-                    { id: 'm_am_3', name: 'Tricep Rope Pushdowns', target: '3 x 12-15' }
+                    { id: 'm_am_1', name: 'Incline Walk (Zone 2)', target: '25 mins', type: 'cardio' },
+                    { id: 'm_am_2', name: 'Hanging Leg Raises', target: '3 x Failure', type: 'reps_only' },
+                    { id: 'm_am_3', name: 'Plank', target: '3 x Max Time', type: 'duration' }
                 ],
                 PM: [
                     { id: 'm_pm_1', name: 'Incline DB Bench Press', target: '4 x 8-10' },
                     { id: 'm_pm_2', name: 'Flat Barbell Bench', target: '3 x 6-8' },
                     { id: 'm_pm_3', name: 'Seated DB Shoulder Press', target: '3 x 8-10' },
                     { id: 'm_pm_4', name: 'Cable Lateral Raises', target: '4 x 15-20' },
-                    { id: 'm_pm_5', name: 'Overhead Tricep Extension', target: '3 x 10-12' }
+                    { id: 'm_pm_5', name: 'Overhead Tricep Extension', target: '3 x 10-12' },
+                    { id: 'm_pm_6', name: 'Push Ups', target: '3 x Failure', type: 'reps_only' },
+                    { id: 'm_pm_7', name: 'Diamond Pushups', target: '3 x Failure', type: 'reps_only' }
                 ]
             },
             'Tuesday': {
                 AM: [
                     { id: 't_am_1', name: 'Incline Walk (Zone 2)', target: '25 mins', type: 'cardio' },
-                    { id: 't_am_2', name: 'Hanging Leg Raises', target: '3 x Failure', type: 'reps_only' }
+                    { id: 't_am_2', name: 'Incline Bicep Curls', target: '3 x 10-12' }
                 ],
                 PM: [
                     { id: 't_pm_1', name: 'Barbell Rows', target: '4 x 6-8' },
@@ -367,9 +451,11 @@
             },
             'Wednesday': {
                 AM: [
-                    { id: 'w_am_1', name: 'Upright Rows', target: '3 x 12-15' },
-                    { id: 'w_am_2', name: 'Cable Lateral Raises', target: '4 x 15-20' },
-                    { id: 'w_am_3', name: 'Preacher Curls', target: '3 x 10-12' }
+                    { id: 'w_am_1', name: 'Incline Walk (Zone 2)', target: '25 mins', type: 'cardio' },
+                    { id: 'w_am_2', name: 'Hanging Leg Raises', target: '3 x Failure', type: 'reps_only' },
+                    { id: 'w_am_3', name: 'Cable Crunches', target: '3 x 15-20' },
+                    { id: 'w_am_4', name: 'Ab Crunch Machine', target: '3 x 12-15' },
+                    { id: 'w_am_5', name: 'Bicycle Crunches', target: '3 x 20 reps', type: 'reps_only' }
                 ],
                 PM: [
                     { id: 'w_pm_1', name: 'Barbell Squats', target: '4 x 6-8' },
@@ -382,21 +468,26 @@
             'Thursday': {
                 AM: [
                     { id: 'th_am_1', name: 'Incline Walk (Zone 2)', target: '25 mins', type: 'cardio' },
-                    { id: 'th_am_2', name: 'Cable Crunches', target: '3 x 15-20' }
+                    { id: 'th_am_2', name: 'DB Lateral Raises', target: '4 x 15-20', type: 'reps_only' },
+                    { id: 'th_am_3', name: 'Tricep Rope Pushdowns', target: '3 x 12-15' }
                 ],
                 PM: [
                     { id: 'th_pm_1', name: 'Overhead Press (OHP)', target: '4 x 6-8' },
-                    { id: 'th_pm_2', name: 'DB Lateral Raises', target: '4 x 12-15' },
-                    { id: 'th_pm_3', name: 'Incline Machine Press', target: '3 x 8-10' },
-                    { id: 'th_pm_4', name: 'Pec Deck Flys', target: '3 x 12-15' },
-                    { id: 'th_pm_5', name: 'Skull Crushers', target: '3 x 10-12' }
+                    { id: 'th_pm_2', name: 'Incline Machine Press', target: '3 x 8-10' },
+                    { id: 'th_pm_3', name: 'Pec Deck Flys', target: '3 x 12-15' },
+                    { id: 'th_pm_4', name: 'Cable Lateral Raises', target: '4 x 15-20' },
+                    { id: 'th_pm_5', name: 'Skull Crushers', target: '3 x 10-12' },
+                    { id: 'th_pm_6', name: 'Push Ups', target: '3 x Failure', type: 'reps_only' },
+                    { id: 'th_pm_7', name: 'Diamond Pushups', target: '3 x Failure', type: 'reps_only' }
                 ]
             },
             'Friday': {
                 AM: [
-                    { id: 'f_am_1', name: 'Face Pulls', target: '3 x 15-20' },
-                    { id: 'f_am_2', name: 'DB Lateral Raises', target: '4 x 15-20' },
-                    { id: 'f_am_3', name: 'Incline DB Curls', target: '3 x 10-12' }
+                    { id: 'f_am_1', name: 'Incline Walk (Zone 2)', target: '25 mins', type: 'cardio' },
+                    { id: 'f_am_2', name: 'Incline Bicep Curls', target: '3 x 10-12' },
+                    { id: 'f_am_3', name: 'Hanging Leg Raises', target: '3 x Failure', type: 'reps_only' },
+                    { id: 'f_am_4', name: 'Ab Crunch Machine', target: '3 x 12-15' },
+                    { id: 'f_am_5', name: 'Plank', target: '3 x Max Time', type: 'duration' }
                 ],
                 PM: [
                     { id: 'f_pm_1', name: 'Weighted Pull-Ups', target: '4 x 6-8' },
@@ -419,8 +510,22 @@
                     { id: 's_pm_5', name: 'Seated Calf Raises', target: '4 x 15-20' }
                 ]
             },
-            'Sunday': { AM: [], PM: [] }
+            'Sunday': { 
+                AM: [
+                    { id: 'su_am_1', name: 'Incline Walk (Zone 2)', target: '30 mins', type: 'cardio' }
+                ], 
+                PM: [
+                    { id: 'su_pm_1', name: 'Hanging Leg Raises', target: '3 x Failure', type: 'reps_only' },
+                    { id: 'su_pm_2', name: 'Cable Crunches', target: '3 x 15-20' },
+                    { id: 'su_pm_3', name: 'Incline Bicep Curls', target: '3 x 10-12' },
+                    { id: 'su_pm_4', name: 'DB Shrugs', target: '4 x 15-20' },
+                    { id: 'su_pm_5', name: 'Farmer\'s Walks', target: '3 x Max Time', type: 'duration' }
+                ] 
+            }
         };
+
+        // Initialize mutable workoutData
+        let workoutData = JSON.parse(JSON.stringify(defaultWorkoutData));
 
         const meals = [
             { id: 'm1', targetTime: '08:00', name: 'High-Cal Breakfast', desc: '4 Eggs, Oats, PB, Whole Milk', details: '• 4 Whole Eggs (scrambled)\n• 1.5 cups Oatmeal (cooked with whole milk)\n• 2 tbsp Peanut Butter\n• 1 Banana' },
@@ -447,7 +552,6 @@
             return getLocalISOString(new Date()); 
         }
 
-        // Returns today's actual calendar date (since selectedDay is now always today)
         function getSelectedDateStr() {
             return getTodayDateStr();
         }
@@ -455,6 +559,8 @@
         function init() {
             updateDateHeader();
             updateTabVisibility(); 
+            
+            // Load App State
             try {
                 const local = localStorage.getItem(LOCAL_STORAGE_KEY);
                 if(local) {
@@ -462,8 +568,16 @@
                     appData = { ...appData, ...parsed };
                 }
             } catch (e) { console.error(e); }
-            renderContent();
             
+            // Load Custom Routine Settings
+            try {
+                const customRoutine = localStorage.getItem(CUSTOM_ROUTINE_KEY);
+                if (customRoutine) {
+                    workoutData = JSON.parse(customRoutine);
+                }
+            } catch(e) { console.error(e); }
+
+            renderContent();
             updateConsistencyUI();
             updateUrgencyUI();
             setInterval(updateUrgencyUI, 60000); 
@@ -476,17 +590,8 @@
         }
 
         function updateTabVisibility() {
-            const amBtn = document.getElementById('tab-AM');
-            const pmBtn = document.getElementById('tab-PM');
-            
-            if (selectedDay === 'Sunday') {
-                amBtn.style.display = 'none';
-                pmBtn.style.display = 'none';
-                setTab('FOOD');
-            } else {
-                amBtn.style.display = 'block';
-                pmBtn.style.display = 'block'; // Bug fixed here: previously amBtn was listed twice
-            }
+            document.getElementById('tab-AM').style.display = 'block';
+            document.getElementById('tab-PM').style.display = 'block';
         }
 
         window.setTab = function(tabName) {
@@ -619,7 +724,7 @@
                         addBtnContainer.className = 'p-6 bg-brand-base relative';
                         addBtnContainer.innerHTML = `
                             <button onclick="openAddExModal()" class="w-full py-4 border-2 border-dashed border-brand-line text-brand-muted hover:border-brand-text hover:text-brand-text hover:bg-brand-surface transition-colors font-mono text-[10px] tracking-widest uppercase flex items-center justify-center gap-2">
-                                <i data-lucide="plus" width="14" height="14"></i> Add Bonus Exercise (${3 - bonusExercises.length} left)
+                                <i data-lucide="plus" width="14" height="14"></i> Add Today's Bonus (${3 - bonusExercises.length} left)
                             </button>
                         `;
                         content.appendChild(addBtnContainer);
@@ -645,15 +750,29 @@
                 // Eval AM
                 const amEx = workoutData[dayOfWeek].AM;
                 if(amEx.length > 0) {
-                    maxScore++;
-                    if(amEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t))) totalScore++;
+                    const amDone = amEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t));
+                    // Sunday is Optional - Only adds to maxScore if you did it.
+                    if (dayOfWeek !== 'Sunday') {
+                        maxScore++;
+                        if(amDone) totalScore++;
+                    } else if (amDone) {
+                        maxScore++;
+                        totalScore++;
+                    }
                 }
                 
                 // Eval PM
                 const pmEx = workoutData[dayOfWeek].PM;
                 if(pmEx.length > 0) {
-                    maxScore++;
-                    if(pmEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t))) totalScore++;
+                    const pmDone = pmEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t));
+                    // Sunday is Optional
+                    if (dayOfWeek !== 'Sunday') {
+                        maxScore++;
+                        if(pmDone) totalScore++;
+                    } else if (pmDone) {
+                        maxScore++;
+                        totalScore++;
+                    }
                 }
                 
                 // Eval Meals
@@ -688,22 +807,42 @@
 
                 // AM logic
                 const amEx = workoutData[dayOfWeek].AM;
-                const amExpected = amEx.length > 0;
+                let amExpected = amEx.length > 0;
                 let amDone = false;
                 if(amExpected) {
                     amDone = amEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t));
-                    maxScore++;
-                    if(amDone) totalScore++;
+                    if (dayOfWeek !== 'Sunday') {
+                        maxScore++;
+                        if(amDone) totalScore++;
+                    } else {
+                        // Optional handling
+                        if(amDone) {
+                            maxScore++;
+                            totalScore++;
+                        } else {
+                            amExpected = false;
+                        }
+                    }
                 }
 
                 // PM logic
                 const pmEx = workoutData[dayOfWeek].PM;
-                const pmExpected = pmEx.length > 0;
+                let pmExpected = pmEx.length > 0;
                 let pmDone = false;
                 if(pmExpected) {
                     pmDone = pmEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t));
-                    maxScore++;
-                    if(pmDone) totalScore++;
+                    if (dayOfWeek !== 'Sunday') {
+                        maxScore++;
+                        if(pmDone) totalScore++;
+                    } else {
+                        // Optional handling
+                        if(pmDone) {
+                            maxScore++;
+                            totalScore++;
+                        } else {
+                            pmExpected = false;
+                        }
+                    }
                 }
 
                 // Meals logic
@@ -786,6 +925,8 @@
         }
 
         function isSessionCompleted(sessionName) {
+            if (selectedDay === 'Sunday') return true; // Optional workouts are never flagged as urgent
+            
             const dateKey = getTodayDateStr();
             const exList = workoutData[selectedDay]?.[sessionName] || [];
             if(exList.length === 0) return true; 
@@ -895,6 +1036,103 @@
             inputs.forEach((input, i) => { if(i > 0 && !input.value) { input.value = value; saveSet(exId, i, field, value); }});
         }
 
+        // --- SETTINGS: EDIT ROUTINE LOGIC ---
+        window.setSettingsTab = function(tabName) {
+            document.getElementById('content-s-routine').style.display = tabName === 'routine' ? 'block' : 'none';
+            document.getElementById('content-s-data').style.display = tabName === 'data' ? 'block' : 'none';
+            
+            const btnRoutine = document.getElementById('tab-s-routine');
+            const btnData = document.getElementById('tab-s-data');
+            
+            if(tabName === 'routine') {
+                btnRoutine.className = 'flex-1 py-3 text-brand-text bg-brand-base border-r border-transparent transition-colors';
+                btnData.className = 'flex-1 py-3 text-brand-muted border-l border-brand-line hover:text-brand-text transition-colors bg-brand-surface';
+            } else {
+                btnRoutine.className = 'flex-1 py-3 text-brand-muted border-r border-brand-line hover:text-brand-text transition-colors bg-brand-surface';
+                btnData.className = 'flex-1 py-3 text-brand-text bg-brand-base border-l border-transparent transition-colors';
+            }
+        };
+
+        window.renderRoutineEditor = function() {
+            const day = document.getElementById('editDaySelect').value;
+            const session = document.getElementById('editSessionSelect').value;
+            const list = document.getElementById('editExerciseList');
+            list.innerHTML = '';
+            
+            const exercises = workoutData[day]?.[session] || [];
+            if(exercises.length === 0) {
+                list.innerHTML = `<div class="text-[10px] font-mono text-brand-muted uppercase py-6 text-center border border-dashed border-brand-line bg-brand-base">Rest Session (Empty)</div>`;
+            } else {
+                exercises.forEach((ex, idx) => {
+                    const typeDisplay = ex.type === 'cardio' ? 'Cardio' : (ex.type === 'reps_only' ? 'Reps Only' : (ex.type === 'duration' ? 'Timed' : 'Weights'));
+                    list.innerHTML += `
+                        <div class="flex justify-between items-center p-3 border border-brand-line bg-brand-base">
+                            <div>
+                                <div class="text-sm text-brand-text font-medium">${ex.name}</div>
+                                <div class="text-[9px] font-mono text-brand-muted uppercase tracking-wider mt-0.5">${ex.target} | ${typeDisplay}</div>
+                            </div>
+                            <button onclick="deleteRoutineExercise('${day}', '${session}', ${idx})" class="text-brand-muted hover:text-rust transition-colors p-2 -mr-2">
+                                <i data-lucide="trash-2" width="16" height="16"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+            lucide.createIcons();
+        };
+
+        window.saveRoutineExercise = function() {
+            const day = document.getElementById('editDaySelect').value;
+            const session = document.getElementById('editSessionSelect').value;
+            const name = document.getElementById('editExName').value.trim();
+            const target = document.getElementById('editExTarget').value.trim();
+            const type = document.getElementById('editExType').value;
+            
+            if(!name) return;
+
+            const newEx = {
+                id: `c_${Date.now()}`,
+                name: name,
+                target: target || (type === 'cardio' ? '25 mins' : '3 x 10-12')
+            };
+            if (type !== 'strength') newEx.type = type;
+
+            if(!workoutData[day]) workoutData[day] = { AM: [], PM: [] };
+            if(!workoutData[day][session]) workoutData[day][session] = [];
+            
+            workoutData[day][session].push(newEx);
+            
+            localStorage.setItem(CUSTOM_ROUTINE_KEY, JSON.stringify(workoutData));
+            
+            document.getElementById('editExName').value = '';
+            document.getElementById('editExTarget').value = '';
+            
+            renderRoutineEditor();
+            renderContent();
+            updateConsistencyUI();
+            showToast("ROUTINE SAVED");
+        };
+
+        window.deleteRoutineExercise = function(day, session, index) {
+            workoutData[day][session].splice(index, 1);
+            localStorage.setItem(CUSTOM_ROUTINE_KEY, JSON.stringify(workoutData));
+            renderRoutineEditor();
+            renderContent();
+            updateConsistencyUI();
+            showToast("EXERCISE DELETED");
+        };
+
+        window.resetRoutineToDefault = function() {
+            if(confirm("Are you sure you want to reset to the original default protocol? This will erase all your custom exercise modifications.")) {
+                workoutData = JSON.parse(JSON.stringify(defaultWorkoutData));
+                localStorage.removeItem(CUSTOM_ROUTINE_KEY);
+                renderRoutineEditor();
+                renderContent();
+                updateConsistencyUI();
+                showToast("PROTOCOL RESET");
+            }
+        };
+
         // --- BONUS EXERCISES LOGIC ---
         window.openAddExModal = function(exId) {
             if (typeof exId !== 'string') exId = null; 
@@ -998,7 +1236,7 @@
                 'Thursday': 'Shoulders, Chest & Triceps',
                 'Friday': 'Back & Biceps',
                 'Saturday': 'Legs',
-                'Sunday': 'Rest & Recovery'
+                'Sunday': 'Active Recovery & Weak Points'
             };
 
             let html = '';
@@ -1038,16 +1276,27 @@
             lucide.createIcons();
         };
 
-        window.openKeyModal = () => {
-            document.getElementById('keyModal').classList.remove('hidden');
-            document.getElementById('currentKeyDisplay').innerText = btoa(JSON.stringify(appData));
+        window.openSettingsModal = () => {
+            document.getElementById('settingsModal').classList.remove('hidden');
+            setSettingsTab('routine'); // Default tab
+            renderRoutineEditor();
+            
+            // Build Sync Export Key (combines logged data + custom routine)
+            const syncPayload = {
+                appData: appData,
+                customRoutine: workoutData
+            };
+            document.getElementById('currentKeyDisplay').innerText = btoa(JSON.stringify(syncPayload));
+            lucide.createIcons();
         };
+
         window.openMealInfo = (e, id) => {
             const meal = meals.find(m => m.id === id);
             document.getElementById('modalTitle').innerText = meal.name;
             document.getElementById('modalBody').innerText = meal.details;
             document.getElementById('infoModal').classList.remove('hidden');
         };
+        
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
         window.openGoogleSearch = (term) => window.open('https://www.google.com/search?q=' + encodeURIComponent(term), '_blank');
         
@@ -1062,7 +1311,17 @@
                 const input = document.getElementById('recoverKeyInput').value.trim();
                 if (!input) return;
                 const parsed = JSON.parse(atob(input));
-                appData = parsed; 
+                
+                // Backwards compatibility check
+                if (parsed.appData) {
+                    appData = parsed.appData;
+                    if (parsed.customRoutine) {
+                        localStorage.setItem(CUSTOM_ROUTINE_KEY, JSON.stringify(parsed.customRoutine));
+                    }
+                } else {
+                    appData = parsed; // Old format
+                }
+                
                 saveData(); 
                 window.location.reload(); 
             } catch(e) { 
