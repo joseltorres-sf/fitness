@@ -139,7 +139,7 @@
             <button onclick="openCalcModal()" class="text-brand-muted hover:text-brand-text transition-colors" title="Plate Calculator">
                 <i data-lucide="calculator" width="18" height="18"></i>
             </button>
-            <button onclick="openStatsModal()" class="relative text-brand-muted hover:text-brand-rust transition-colors" title="Consistency">
+            <button onclick="openStatsModal()" class="relative text-brand-muted hover:text-brand-rust transition-colors" title="Consistency & Progress">
                 <i data-lucide="heart" width="18" height="18"></i>
                 <span id="consistency-dot" class="absolute -top-1 -right-1 w-2 h-2 rounded-full opacity-0 transition-all duration-500 shadow-sm"></span>
             </button>
@@ -391,25 +391,51 @@
     <!-- Stats/Consistency Modal -->
     <div id="statsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('statsModal')"></div>
-        <div class="relative bg-brand-base border border-brand-line w-full max-w-lg industrial-shadow">
-             <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center">
+        <div class="relative bg-brand-base border border-brand-line w-full max-w-lg industrial-shadow flex flex-col max-h-[90vh]">
+             <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center shrink-0">
                 <h3 class="font-mono text-[10px] tracking-[0.2em] text-brand-text uppercase flex items-center gap-2">
-                    <i data-lucide="activity" width="14" height="14"></i> Consistency (Last 7 Days)
+                    <i data-lucide="activity" width="14" height="14"></i> Analytics
                 </h3>
                 <button onclick="closeModal('statsModal')"><i data-lucide="x" width="16" class="text-brand-muted"></i></button>
             </div>
-            <div class="p-6 md:p-8">
-                <div id="statsContent" class="w-full">
-                    <!-- JS Injected Here -->
-                </div>
-                <div class="flex justify-between items-center mt-6 border-t border-brand-line pt-4">
-                    <p class="font-mono text-[10px] uppercase text-brand-muted">Legend</p>
-                    <div class="flex gap-3 font-mono text-[9px] uppercase text-brand-text">
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 bg-forest-500 rounded-sm"></div> Wkt</span>
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 bg-brass rounded-sm"></div> Food</span>
-                        <span class="flex items-center gap-1"><div class="w-2 h-2 bg-brand-line/40 rounded-sm border border-brand-line"></div> Miss</span>
+
+            <!-- Tabs -->
+            <div class="flex border-b border-brand-line shrink-0 font-mono text-[10px] uppercase tracking-widest bg-brand-surface">
+                <button onclick="setStatsTab('consistency')" id="tab-st-consistency" class="flex-1 py-3 text-brand-text bg-brand-base border-r border-transparent transition-colors">7-Day Consistency</button>
+                <button onclick="setStatsTab('progression')" id="tab-st-progression" class="flex-1 py-3 text-brand-muted border-l border-brand-line hover:text-brand-text transition-colors">Progression</button>
+            </div>
+
+            <div class="p-6 md:p-8 overflow-y-auto hide-scrollbar flex-1 relative min-h-[300px]">
+                
+                <!-- CONSISTENCY TAB -->
+                <div id="content-st-consistency" class="block w-full">
+                    <div id="statsContent" class="w-full">
+                        <!-- JS Injected Here -->
+                    </div>
+                    <div class="flex justify-between items-center mt-6 border-t border-brand-line pt-4">
+                        <p class="font-mono text-[10px] uppercase text-brand-muted">Legend</p>
+                        <div class="flex gap-3 font-mono text-[9px] uppercase text-brand-text">
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 bg-forest-500 rounded-sm"></div> Wkt</span>
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 bg-brass rounded-sm"></div> Food</span>
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 bg-brand-line/40 rounded-sm border border-brand-line"></div> Miss</span>
+                        </div>
                     </div>
                 </div>
+
+                <!-- PROGRESSION TAB -->
+                <div id="content-st-progression" class="hidden w-full flex-col h-full">
+                    <div class="mb-6 relative">
+                        <select id="progressExSelect" onchange="renderProgressionChart()" class="w-full bg-brand-surface border border-brand-line p-3 font-mono text-xs outline-none text-brand-text focus:border-brand-text appearance-none pr-10">
+                            <!-- JS Injected -->
+                        </select>
+                        <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted pointer-events-none" width="16"></i>
+                    </div>
+                    
+                    <div id="progressChartArea" class="w-full flex-1 flex flex-col justify-center border border-brand-line bg-brand-surface p-4 relative min-h-[220px]">
+                        <!-- JS Injected SVG -->
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -564,6 +590,23 @@
             return getTodayDateStr();
         }
 
+        // Global Dictionary Helper
+        function buildExerciseDict() {
+            let dict = {};
+            // Standard
+            Object.values(workoutData).forEach(day => {
+                day.AM.concat(day.PM).forEach(ex => dict[ex.id] = ex);
+            });
+            // Bonus
+            if(appData.extraExercises) {
+                Object.keys(appData.extraExercises).forEach(dateKey => {
+                    const tabs = appData.extraExercises[dateKey];
+                    (tabs.AM || []).concat(tabs.PM || []).forEach(ex => dict[ex.id] = ex);
+                });
+            }
+            return dict;
+        }
+
         function init() {
             updateDateHeader();
             updateTabVisibility(); 
@@ -678,12 +721,36 @@
                             } else {
                                 text = `${(history.sets||[]).map(s => s.w ? `${s.w}x${s.r}` : s.r || '-').join(', ')}`;
                             }
-                            historyHTML = `<div class="inline-flex items-center px-2 py-1 bg-brand-surface border border-brand-line text-[10px] font-mono uppercase text-brand-muted mb-4"><div class="flex items-center gap-1.5"><i data-lucide="history" width="10" height="10"></i> <span>Last: ${text}</span></div></div>`;
+                            
+                            let ratingDot = '';
+                            if (history.rating) {
+                                let dotColor = 'bg-brand-line';
+                                if (history.rating === 'easy') dotColor = 'bg-forest-500';
+                                else if (history.rating === 'med') dotColor = 'bg-brass';
+                                else if (history.rating === 'hard') dotColor = 'bg-rust';
+                                ratingDot = `<span class="w-1.5 h-1.5 rounded-full ${dotColor} inline-block ml-1 relative -top-0.5"></span>`;
+                            }
+
+                            let noteHtml = '';
+                            if (history.note && history.note.trim() !== '') {
+                                noteHtml = `<div class="mt-1 text-[9px] text-brand-muted normal-case tracking-normal border-t border-brand-line/50 pt-1 flex gap-1"><i data-lucide="message-square" width="8" height="8" class="mt-0.5 shrink-0"></i><span class="truncate" title="${history.note.replace(/"/g, '&quot;')}">${history.note}</span></div>`;
+                            }
+
+                            historyHTML = `<div class="inline-flex flex-col px-2 py-1.5 bg-brand-surface border border-brand-line text-[10px] font-mono uppercase text-brand-muted mb-4 max-w-full">
+                                <div class="flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                                    <i data-lucide="history" width="10" height="10" class="shrink-0"></i> 
+                                    <span class="truncate">Last: ${text}</span>
+                                    ${ratingDot}
+                                </div>
+                                ${noteHtml}
+                            </div>`;
                         }
 
                         let setsHTML = `<div class="flex flex-col gap-2 mb-4" id="sets-${ex.id}">`;
                         for(let i=0; i<numSets; i++) {
-                            const setData = (todayData.sets && todayData.sets[i]) ? todayData.sets[i] : {w:'', r:'', t:''};
+                            const setData = (todayData.sets && todayData.sets[i]) ? todayData.sets[i] : {};
+                            const histSet = (history && history.sets && history.sets[i]) ? history.sets[i] : {};
+                            
                             const inputBase = "bg-transparent border-b border-brand-line focus:border-brand-forest text-center font-mono text-sm py-1 outline-none transition-colors w-full text-brand-text placeholder-brand-muted/30";
                             
                             let inputs = '';
@@ -691,15 +758,21 @@
 
                             if (ex.type === 'cardio') {
                                 gridCols = 'grid-cols-3';
-                                inputs = `<input type="number" class="${inputBase}" placeholder="Min" value="${setData.t || ''}" onchange="saveSet('${ex.id}', ${i}, 't', this.value)">
-                                          <input type="number" step="0.1" class="${inputBase}" placeholder="Spd" value="${setData.w || ''}" onchange="saveSet('${ex.id}', ${i}, 'w', this.value)">
-                                          <input type="number" step="0.5" class="${inputBase}" placeholder="Inc" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">`;
+                                const cValT = setData.t !== undefined ? setData.t : (histSet.t || '');
+                                const cValW = setData.w !== undefined ? setData.w : (histSet.w || '');
+                                const cValR = setData.r !== undefined ? setData.r : (histSet.r || '');
+                                inputs = `<input type="number" id="t-${ex.id}-${i}" class="${inputBase}" placeholder="Min" value="${cValT}" onchange="saveSet('${ex.id}', ${i})">
+                                          <input type="number" id="w-${ex.id}-${i}" step="0.1" class="${inputBase}" placeholder="Spd" value="${cValW}" onchange="saveSet('${ex.id}', ${i})">
+                                          <input type="number" id="r-${ex.id}-${i}" step="0.5" class="${inputBase}" placeholder="Inc" value="${cValR}" onchange="saveSet('${ex.id}', ${i})">`;
                             } else if (ex.type === 'reps_only' || ex.type === 'duration') {
                                 gridCols = 'grid-cols-1';
-                                inputs = `<input type="text" class="${inputBase}" placeholder="${ex.type === 'duration' ? 'Time' : 'Reps'}" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">`;
+                                const ph = histSet.r ? `Last: ${histSet.r}` : (ex.type === 'duration' ? 'Time' : 'Reps');
+                                inputs = `<input type="text" id="r-${ex.id}-${i}" class="${inputBase}" placeholder="${ph}" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i})">`;
                             } else {
-                                inputs = `<input type="number" class="${inputBase} autofill-target" id="w-${ex.id}-${i}" placeholder="Lbs" value="${setData.w || ''}" onchange="handleFirstSetAutofill('${ex.id}', 'w', this.value)">
-                                          <input type="number" class="${inputBase}" placeholder="Reps" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i}, 'r', this.value)">`;
+                                const wVal = (setData.w !== undefined && setData.w !== '') ? setData.w : (histSet.w || '');
+                                const ph = histSet.r ? `Last: ${histSet.r}` : 'Reps';
+                                inputs = `<input type="number" id="w-${ex.id}-${i}" class="${inputBase} autofill-target" placeholder="Lbs" value="${wVal}" onchange="handleFirstSetAutofill('${ex.id}')">
+                                          <input type="number" id="r-${ex.id}-${i}" class="${inputBase}" placeholder="${ph}" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i})">`;
                             }
 
                             setsHTML += `<div class="grid grid-cols-[40px_1fr] gap-4 items-center"><span class="font-mono text-[10px] text-brand-muted text-right pr-2 border-r border-brand-line">0${i+1}</span><div class="grid ${gridCols} gap-4">${inputs}</div></div>`;
@@ -707,22 +780,33 @@
                         setsHTML += '</div>';
 
                         const r = todayData.rating;
-                        const ratingHTML = `<div class="flex justify-end gap-2 mt-2">
-                            <button onclick="saveRating('${ex.id}', 'easy')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center ${r==='easy' ? 'bg-forest-500 border-forest-500' : ''}"><span class="w-2 h-2 rounded-full ${r==='easy' ? 'bg-white' : 'bg-forest-500'}"></span></button>
-                            <button onclick="saveRating('${ex.id}', 'med')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center ${r==='med' ? 'bg-brass border-brass' : ''}"><span class="w-2 h-2 rounded-full ${r==='med' ? 'bg-white' : 'bg-brass'}"></span></button>
-                            <button onclick="saveRating('${ex.id}', 'hard')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center ${r==='hard' ? 'bg-rust border-rust' : ''}"><span class="w-2 h-2 rounded-full ${r==='hard' ? 'bg-white' : 'bg-rust'}"></span></button>
+                        const ratingHTML = `<div class="flex justify-between items-center mt-2">
+                            <button onclick="toggleNotes('${ex.id}')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-brand-surface transition-colors" title="Add Note">
+                                <i data-lucide="message-square" width="12" height="12"></i>
+                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="saveRating('${ex.id}', 'easy')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center ${r==='easy' ? 'bg-forest-500 border-forest-500' : ''}"><span class="w-2 h-2 rounded-full ${r==='easy' ? 'bg-white' : 'bg-forest-500'}"></span></button>
+                                <button onclick="saveRating('${ex.id}', 'med')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center ${r==='med' ? 'bg-brass border-brass' : ''}"><span class="w-2 h-2 rounded-full ${r==='med' ? 'bg-white' : 'bg-brass'}"></span></button>
+                                <button onclick="saveRating('${ex.id}', 'hard')" class="w-6 h-6 rounded-full border border-brand-line flex items-center justify-center ${r==='hard' ? 'bg-rust border-rust' : ''}"><span class="w-2 h-2 rounded-full ${r==='hard' ? 'bg-white' : 'bg-rust'}"></span></button>
+                            </div>
                         </div>`;
+                        
+                        const notesHTML = `
+                            <div id="notes-container-${ex.id}" class="${todayData.note ? 'block' : 'hidden'} mt-4">
+                                <textarea id="note-${ex.id}" onchange="saveNote('${ex.id}', this.value)" class="w-full bg-brand-surface border border-brand-line text-brand-text text-xs p-3 font-mono outline-none focus:border-brand-forest resize-none placeholder-brand-muted/50" placeholder="Notes (e.g., felt weak, modified form...)" rows="2">${todayData.note || ''}</textarea>
+                            </div>
+                        `;
 
                         const titleClick = ex.isBonus ? `openAddExModal('${ex.id}')` : `openGoogleSearch('${ex.name.replace(/'/g, "\\'")}')`;
                         const titleColor = ex.isBonus ? `text-brand-accent` : `text-brand-text`;
-                        const badge = ex.isBonus ? `<span class="ml-2 inline-block bg-brand-surface border border-brand-line text-brand-muted px-1.5 py-0.5 text-[8px] rounded-sm relative -top-0.5">BONUS</span>` : '';
+                        const badge = ex.isBonus ? `<span class="ml-2 inline-block bg-brand-surface border border-brand-line text-brand-muted px-1.5 py-0.5 text-[8px] rounded-sm relative -top-0.5 font-mono uppercase">BONUS</span>` : '';
 
                         const card = document.createElement('div');
                         card.className = 'bg-brand-base p-6 md:p-8 relative';
                         card.innerHTML = `<div class="mb-4">
                             <h3 class="text-lg font-medium ${titleColor} leading-tight cursor-pointer hover:underline" onclick="${titleClick}">${ex.name} ${badge}</h3>
                             <p class="font-mono text-[10px] tracking-wider text-brand-muted uppercase mt-1">${ex.target}</p>
-                        </div>${historyHTML}${setsHTML}${ratingHTML}`;
+                        </div>${historyHTML}${setsHTML}${ratingHTML}${notesHTML}`;
                         content.appendChild(card);
                     });
 
@@ -800,6 +884,9 @@
 
         window.openStatsModal = () => {
             document.getElementById('statsModal').classList.remove('hidden');
+            setStatsTab('consistency');
+            
+            // Build Consistency UI
             let html = '<div class="flex items-end h-40 pt-4 w-full gap-1 sm:gap-2">';
             let totalScore = 0;
             let maxScore = 0;
@@ -893,6 +980,168 @@
                 </div>
                 ${html}
             `;
+
+            // Prepare Progression UI
+            populateProgressionDropdown();
+            renderProgressionChart();
+            lucide.createIcons();
+        };
+
+        window.setStatsTab = function(tabName) {
+            document.getElementById('content-st-consistency').style.display = tabName === 'consistency' ? 'block' : 'none';
+            document.getElementById('content-st-progression').style.display = tabName === 'progression' ? 'flex' : 'none';
+            
+            const btnCon = document.getElementById('tab-st-consistency');
+            const btnProg = document.getElementById('tab-st-progression');
+            
+            if(tabName === 'consistency') {
+                btnCon.className = 'flex-1 py-3 text-brand-text bg-brand-base border-r border-transparent transition-colors';
+                btnProg.className = 'flex-1 py-3 text-brand-muted border-l border-brand-line hover:text-brand-text transition-colors bg-brand-surface';
+            } else {
+                btnCon.className = 'flex-1 py-3 text-brand-muted border-r border-brand-line hover:text-brand-text transition-colors bg-brand-surface';
+                btnProg.className = 'flex-1 py-3 text-brand-text bg-brand-base border-l border-transparent transition-colors';
+            }
+        };
+
+        function populateProgressionDropdown() {
+            const dict = buildExerciseDict();
+            const loggedIds = Object.values(appData.workouts).map(w => w.exerciseId);
+            const loggedNames = Array.from(new Set(loggedIds.map(id => dict[id]?.name).filter(Boolean))).sort();
+            
+            const select = document.getElementById('progressExSelect');
+            if(loggedNames.length === 0) {
+                select.innerHTML = `<option value="">No workouts logged yet</option>`;
+            } else {
+                select.innerHTML = loggedNames.map(n => `<option value="${n}">${n}</option>`).join('');
+            }
+        }
+
+        window.renderProgressionChart = function() {
+            const select = document.getElementById('progressExSelect');
+            const area = document.getElementById('progressChartArea');
+            const exName = select.value;
+            
+            if(!exName) {
+                area.innerHTML = `<div class="text-[10px] font-mono text-brand-muted uppercase py-12 text-center border border-dashed border-brand-line bg-brand-base">Awaiting Data</div>`;
+                return;
+            }
+
+            const dict = buildExerciseDict();
+            
+            // Gather all completed sessions matching the name
+            const sessionsRaw = Object.values(appData.workouts)
+                .filter(d => dict[d.exerciseId] && dict[d.exerciseId].name === exName)
+                .map(d => {
+                    const exDef = dict[d.exerciseId];
+                    let maxVal = 0;
+                    let metricLabel = 'lbs';
+                    if (exDef.type === 'cardio') {
+                        maxVal = Math.max(...d.sets.map(s => parseFloat(s.t) || 0));
+                        metricLabel = 'mins';
+                    } else if (exDef.type === 'reps_only' || exDef.type === 'duration') {
+                        maxVal = Math.max(...d.sets.map(s => parseInt(s.r) || 0));
+                        metricLabel = exDef.type === 'duration' ? 'sec/min' : 'reps';
+                    } else {
+                        maxVal = Math.max(...d.sets.map(s => parseFloat(s.w) || 0));
+                    }
+                    // Extract Date and reset to midnight local to avoid timezone shift grouping
+                    const dateParts = d.date.split('-');
+                    const dateObj = new Date(dateParts[0], dateParts[1]-1, dateParts[2]);
+                    return { dateObj: dateObj, dateStr: d.date, val: maxVal, metric: metricLabel };
+                })
+                .filter(s => s.val > 0)
+                .sort((a, b) => a.dateObj - b.dateObj);
+
+            // Deduplicate by date (take highest daily max)
+            const uniqueSessions = [];
+            sessionsRaw.forEach(s => {
+                const existing = uniqueSessions.find(u => u.dateStr === s.dateStr);
+                if(existing) existing.val = Math.max(existing.val, s.val);
+                else uniqueSessions.push(s);
+            });
+
+            if (uniqueSessions.length === 0) {
+                area.innerHTML = `<div class="text-[10px] font-mono text-brand-muted uppercase py-12 text-center border border-dashed border-brand-line bg-brand-base">No quantitative data found</div>`;
+                return;
+            }
+
+            const width = 400;
+            const height = 220;
+            const padX = 30;
+            const padY = 40;
+
+            if (uniqueSessions.length === 1) {
+                const s = uniqueSessions[0];
+                const dateStr = s.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                area.innerHTML = `
+                    <svg viewBox="0 0 ${width} ${height}" class="w-full h-auto overflow-visible text-brand-text">
+                        <!-- Grid lines -->
+                        <line x1="${padX}" y1="${padY}" x2="${width-padX}" y2="${padY}" stroke="var(--brand-line)" stroke-dasharray="4 4" stroke-width="1"/>
+                        <line x1="${padX}" y1="${height/2}" x2="${width-padX}" y2="${height/2}" stroke="var(--brand-line)" stroke-dasharray="4 4" stroke-width="1"/>
+                        <line x1="${padX}" y1="${height-padY}" x2="${width-padX}" y2="${height-padY}" stroke="var(--brand-line)" stroke-width="1"/>
+                        
+                        <circle cx="${width/2}" cy="${height/2}" r="5" fill="var(--brand-base)" stroke="var(--brand-forest)" stroke-width="2.5"/>
+                        <text x="${width/2}" y="${height/2 - 15}" text-anchor="middle" fill="var(--brand-text)" font-family="monospace" font-size="12" font-weight="bold">${s.val} ${s.metric}</text>
+                        <text x="${width/2}" y="${height-padY + 20}" text-anchor="middle" fill="var(--brand-muted)" font-family="monospace" font-size="9" uppercase>${dateStr}</text>
+                    </svg>
+                `;
+                return;
+            }
+
+            // Line Chart Generation
+            const minV = Math.min(...uniqueSessions.map(s => s.val));
+            const maxV = Math.max(...uniqueSessions.map(s => s.val));
+            const range = maxV - minV === 0 ? 10 : (maxV - minV);
+            const chartMin = Math.max(0, minV - range * 0.2);
+            const chartMax = maxV + range * 0.2;
+
+            const xStep = (width - padX * 2) / (uniqueSessions.length - 1);
+
+            let points = [];
+            uniqueSessions.forEach((s, i) => {
+                const x = padX + i * xStep;
+                const y = height - padY - ((s.val - chartMin) / (chartMax - chartMin)) * (height - padY * 2);
+                points.push(`${x},${y}`);
+                s.x = x; s.y = y;
+            });
+
+            const polylinePts = points.join(" ");
+            const polygonPts = `${padX},${height-padY} ${polylinePts} ${padX + (uniqueSessions.length-1)*xStep},${height-padY}`;
+
+            const firstDate = uniqueSessions[0].dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const lastDate = uniqueSessions[uniqueSessions.length-1].dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+            let svg = `
+                <svg viewBox="0 0 ${width} ${height}" class="w-full h-auto overflow-visible text-brand-text">
+                    <defs>
+                        <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="var(--brand-forest)" stop-opacity="0.25"/>
+                            <stop offset="100%" stop-color="var(--brand-forest)" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    
+                    <line x1="${padX}" y1="${padY}" x2="${width-padX}" y2="${padY}" stroke="var(--brand-line)" stroke-dasharray="4 4" stroke-width="1"/>
+                    <line x1="${padX}" y1="${height/2}" x2="${width-padX}" y2="${height/2}" stroke="var(--brand-line)" stroke-dasharray="4 4" stroke-width="1"/>
+                    <line x1="${padX}" y1="${height-padY}" x2="${width-padX}" y2="${height-padY}" stroke="var(--brand-line)" stroke-width="1"/>
+
+                    <polygon points="${polygonPts}" fill="url(#chart-grad)" />
+                    <polyline points="${polylinePts}" fill="none" stroke="var(--brand-forest)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            `;
+
+            uniqueSessions.forEach((s, i) => {
+                svg += `<circle cx="${s.x}" cy="${s.y}" r="4" fill="var(--brand-base)" stroke="var(--brand-forest)" stroke-width="2"/>`;
+                
+                // Show label on first, last, and every 3rd point to avoid clutter, or all if short
+                if (i === 0 || i === uniqueSessions.length - 1 || uniqueSessions.length < 8) {
+                    svg += `<text x="${s.x}" y="${s.y - 12}" text-anchor="middle" fill="var(--brand-text)" font-family="monospace" font-size="10" font-weight="bold">${s.val}</text>`;
+                }
+            });
+
+            svg += `<text x="${padX}" y="${height-padY + 20}" text-anchor="middle" fill="var(--brand-muted)" font-family="monospace" font-size="9" uppercase>${firstDate}</text>`;
+            svg += `<text x="${width-padX}" y="${height-padY + 20}" text-anchor="middle" fill="var(--brand-muted)" font-family="monospace" font-size="9" uppercase>${lastDate}</text>`;
+            svg += `</svg>`;
+
+            area.innerHTML = svg;
         };
 
         // --- ELEGANT URGENCY SYSTEM ---
@@ -1006,11 +1255,19 @@
             setTimeout(() => { t.classList.add('opacity-0'); setTimeout(() => t.innerText = "CHANGES SAVED", 300); }, 1500);
         }
 
-        window.saveSet = function(exId, setIndex, field, value) {
+        window.saveSet = function(exId, setIndex) {
             const key = getStorageKey(selectedDay, exId);
             if(!appData.workouts[key]) appData.workouts[key] = { sets: [], date: getSelectedDateStr(), exerciseId: exId };
             if(!appData.workouts[key].sets[setIndex]) appData.workouts[key].sets[setIndex] = {w:'', r:'', t:''};
-            appData.workouts[key].sets[setIndex][field] = value;
+            
+            const wEl = document.getElementById(`w-${exId}-${setIndex}`);
+            const rEl = document.getElementById(`r-${exId}-${setIndex}`);
+            const tEl = document.getElementById(`t-${exId}-${setIndex}`);
+            
+            if (wEl) appData.workouts[key].sets[setIndex].w = wEl.value;
+            if (rEl) appData.workouts[key].sets[setIndex].r = rEl.value;
+            if (tEl) appData.workouts[key].sets[setIndex].t = tEl.value;
+            
             saveData();
             showToast();
             updateUrgencyUI(); 
@@ -1026,6 +1283,26 @@
             renderContent(); 
         }
 
+        window.toggleNotes = function(exId) {
+            const el = document.getElementById(`notes-container-${exId}`);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                el.classList.add('block');
+                document.getElementById(`note-${exId}`).focus();
+            } else {
+                el.classList.remove('block');
+                el.classList.add('hidden');
+            }
+        };
+
+        window.saveNote = function(exId, text) {
+            const key = getStorageKey(selectedDay, exId);
+            if(!appData.workouts[key]) appData.workouts[key] = { sets: [], date: getSelectedDateStr(), exerciseId: exId };
+            appData.workouts[key].note = text;
+            saveData();
+            showToast("NOTE SAVED");
+        };
+
         window.toggleMeal = function(mealId) {
             const dateKey = getSelectedDateStr();
             if(!appData.meals[dateKey]) appData.meals[dateKey] = {};
@@ -1036,12 +1313,20 @@
             updateConsistencyUI();
         }
 
-        window.handleFirstSetAutofill = function(exId, field, value) {
-            saveSet(exId, 0, field, value);
+        window.handleFirstSetAutofill = function(exId) {
+            saveSet(exId, 0);
             const container = document.getElementById(`sets-${exId}`);
             if(!container) return;
-            const inputs = container.querySelectorAll('.autofill-target');
-            inputs.forEach((input, i) => { if(i > 0 && !input.value) { input.value = value; saveSet(exId, i, field, value); }});
+            const w0 = document.getElementById(`w-${exId}-0`)?.value;
+            if (w0) {
+                const inputs = container.querySelectorAll('.autofill-target');
+                inputs.forEach((input, i) => { 
+                    if(i > 0 && !input.value) { 
+                        input.value = w0; 
+                        saveSet(exId, i); 
+                    }
+                });
+            }
         }
 
         // --- SETTINGS: EDIT ROUTINE LOGIC ---
@@ -1252,10 +1537,12 @@
             dayOrder.forEach(day => {
                 const am = workoutData[day].AM || [];
                 const pm = workoutData[day].PM || [];
+                const isOptional = day === 'Sunday';
+                const dayBadge = isOptional ? `<span class="ml-2 bg-brand-line/40 text-brand-muted px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest font-mono align-middle relative -top-[1px]">Optional</span>` : '';
                 
                 html += `<div class="mb-4 last:mb-0 border border-brand-line bg-brand-base">`;
                 html += `<div class="bg-brand-surface px-4 py-2 border-b border-brand-line flex justify-between items-center">`;
-                html += `<span class="font-mono text-[12px] uppercase tracking-wider font-bold text-brand-text">${day}</span>`;
+                html += `<div><span class="font-mono text-[12px] uppercase tracking-wider font-bold text-brand-text">${day}</span>${dayBadge}</div>`;
                 html += `<span class="font-mono text-[9px] uppercase tracking-widest text-brand-accent text-right">${dayLabels[day]}</span>`;
                 html += `</div>`;
                 html += `<div class="p-4 flex flex-col gap-4">`;
