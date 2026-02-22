@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <!-- CRITICAL FOR IOS HOME SCREEN DARK MODE -->
-    <meta name="color-scheme" content="light dark">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <!-- Meta Theme Colors for Mobile Browsers -->
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F5F2EB">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#151413">
+    
+    <!-- CRITICAL FOR IOS HOME SCREEN & STATUS BAR -->
+    <meta name="color-scheme" content="light dark">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Using "default" allows iOS to use the theme-color for the background and auto-adjust text contrast -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     
     <title>FITNESS</title>
     
@@ -57,6 +58,11 @@
             /* Subtle organic noise texture */
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
             -webkit-font-smoothing: antialiased;
+            /* Safe area padding to account for iOS Notch/Dynamic Island */
+            padding-top: max(env(safe-area-inset-top), 1.5rem);
+            padding-bottom: max(env(safe-area-inset-bottom), 1.5rem);
+            padding-left: max(env(safe-area-inset-left), 1rem);
+            padding-right: max(env(safe-area-inset-right), 1rem);
         }
 
         .industrial-shadow {
@@ -116,7 +122,7 @@
         }
     </script>
 </head>
-<body class="min-h-screen flex flex-col p-4 md:p-8 pt-6 relative selection:bg-brand-forest selection:text-brand-base">
+<body class="min-h-screen flex flex-col relative selection:bg-brand-forest selection:text-brand-base">
 
     <!-- Header -->
     <div class="w-full max-w-2xl mx-auto mb-6 flex justify-between items-end reveal-up">
@@ -144,7 +150,7 @@
     </div>
 
     <!-- Main Container -->
-    <main class="w-full max-w-2xl mx-auto reveal-up delay-100 flex-grow pb-20">
+    <main class="w-full max-w-2xl mx-auto reveal-up delay-100 flex-grow pb-12">
 
         <!-- Session Type Toggles -->
         <div id="tabContainer" class="flex font-mono text-[10px] tracking-widest uppercase border border-brand-line bg-brand-surface w-full mb-6 industrial-shadow">
@@ -171,7 +177,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="max-w-2xl mx-auto px-4 mt-8 text-center reveal-up delay-200 mb-8">
+    <footer class="max-w-2xl mx-auto mt-4 text-center reveal-up delay-200 mb-4">
         <span class="font-mono text-[10px] tracking-[0.2em] text-brand-muted uppercase">
             Developed by Jose Torres
         </span>
@@ -423,8 +429,10 @@
             'Monday': {
                 AM: [
                     { id: 'm_am_1', name: 'Incline Walk (Zone 2)', target: '25 mins', type: 'cardio' },
-                    { id: 'm_am_2', name: 'Hanging Leg Raises', target: '3 x Failure', type: 'reps_only' },
-                    { id: 'm_am_3', name: 'Plank', target: '3 x Max Time', type: 'duration' }
+                    { id: 'm_am_2', name: 'DB Lateral Raises', target: '4 x 15-20', type: 'reps_only' },
+                    { id: 'm_am_3', name: 'Tricep Rope Pushdowns', target: '3 x 12-15' },
+                    { id: 'm_am_4', name: 'Hanging Leg Raises', target: '3 x Failure', type: 'reps_only' },
+                    { id: 'm_am_5', name: 'Plank', target: '3 x Max Time', type: 'duration' }
                 ],
                 PM: [
                     { id: 'm_pm_1', name: 'Incline DB Bench Press', target: '4 x 8-10' },
