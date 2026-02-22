@@ -419,12 +419,32 @@
             { id: 'm6', targetTime: '22:00', name: 'Before Bed', desc: 'Cottage Cheese & Nuts', details: '• 1 cup Cottage Cheese\n• 1/4 cup Almonds' }
         ];
 
-        // --- UI STATE ---
+        // --- UI STATE & DATE HELPERS ---
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const shortDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
         let currentDayIdx = new Date().getDay();
         let selectedDay = days[currentDayIdx];
         let activeTab = (new Date().getHours() < 12) ? 'AM' : 'PM';
+
+        // Robust Local Date Generator (Prevents timezone spillover)
+        function getLocalISOString(date) {
+            const offset = date.getTimezoneOffset() * 60000;
+            return new Date(date.getTime() - offset).toISOString().split('T')[0];
+        }
+        
+        function getTodayDateStr() { 
+            return getLocalISOString(new Date()); 
+        }
+
+        // Returns the actual calendar date relative to the tab selected 
+        // e.g. If today is Wed, and you click Mon, it returns Monday's actual YYYY-MM-DD
+        function getSelectedDateStr() {
+            const today = new Date();
+            const diff = days.indexOf(selectedDay) - today.getDay();
+            const d = new Date(today);
+            d.setDate(today.getDate() + diff);
+            return getLocalISOString(d);
+        }
 
         function init() {
             renderDaySelector();
@@ -439,7 +459,6 @@
             } catch (e) { console.error(e); }
             renderContent();
             
-            // Start urgency timer and consistency checks
             updateConsistencyUI();
             updateUrgencyUI();
             setInterval(updateUrgencyUI, 60000); 
@@ -479,7 +498,7 @@
                 setTab('FOOD');
             } else {
                 amBtn.style.display = 'block';
-                pmBtn.style.display = 'block';
+                amBtn.style.display = 'block';
             }
         }
 
@@ -500,8 +519,9 @@
             const content = document.getElementById('content');
             content.innerHTML = '';
 
+            const dateKey = getSelectedDateStr();
+
             if (activeTab === 'FOOD') {
-                const dateKey = getTodayDateStr(); // FOOD is always shown on the viewed day, but actually we should just tie it to selected day for consistency
                 const todaysMeals = appData.meals[dateKey] || {};
                 meals.forEach(meal => {
                     const isChecked = todaysMeals[meal.id] === true;
@@ -529,17 +549,10 @@
             } else {
                 const sessionExercises = workoutData[selectedDay] ? workoutData[selectedDay][activeTab] : [];
                 
-                let bonusExercises = [];
-                const isToday = selectedDay === days[new Date().getDay()];
+                if(!appData.extraExercises) appData.extraExercises = {};
+                if(!appData.extraExercises[dateKey]) appData.extraExercises[dateKey] = { AM: [], PM: [] };
                 
-                // Only show bonus exercises on TODAY's actual view
-                if (isToday) {
-                    const dateKey = getTodayDateStr();
-                    if(!appData.extraExercises) appData.extraExercises = {};
-                    if(!appData.extraExercises[dateKey]) appData.extraExercises[dateKey] = { AM: [], PM: [] };
-                    bonusExercises = appData.extraExercises[dateKey][activeTab] || [];
-                }
-                
+                const bonusExercises = appData.extraExercises[dateKey][activeTab] || [];
                 const allExercises = [...sessionExercises, ...bonusExercises];
 
                 if (!allExercises || allExercises.length === 0) {
@@ -610,7 +623,7 @@
                     });
 
                     // Render Add Bonus Button
-                    if (isToday && sessionExercises.length > 0 && bonusExercises.length < 3) {
+                    if (sessionExercises.length > 0 && bonusExercises.length < 3) {
                         const addBtnContainer = document.createElement('div');
                         addBtnContainer.className = 'p-6 bg-brand-base relative';
                         addBtnContainer.innerHTML = `
@@ -633,7 +646,7 @@
 
             for(let i=6; i>=0; i--) {
                 const d = new Date(); d.setDate(d.getDate() - i);
-                const ds = d.toISOString().split('T')[0];
+                const ds = getLocalISOString(d);
                 const dayOfWeek = days[d.getDay()];
 
                 // Eval AM
@@ -673,7 +686,7 @@
 
             for(let i=6; i>=0; i--) {
                 const d = new Date(); d.setDate(d.getDate() - i);
-                const ds = d.toISOString().split('T')[0];
+                const ds = getLocalISOString(d);
                 const dayOfWeek = days[d.getDay()];
                 const shortD = shortDays[d.getDay()];
 
@@ -755,7 +768,7 @@
             const pmUrg = getUrgencyLevel('18:00', isSessionCompleted('PM')); 
             applyUrgencyTab('PM', pmUrg);
 
-            const dateKey = getTodayDateStr();
+            const dateKey = getTodayDateStr(); 
             const todaysMeals = appData.meals[dateKey] || {};
             let highestFoodUrg = null;
             const urgPriority = { 'red': 3, 'yellow': 2, 'green': 1 };
@@ -844,8 +857,7 @@
         }
 
         // --- DATA & SAVING LOGIC ---
-        function getTodayDateStr() { return new Date().toISOString().split('T')[0]; }
-        function getStorageKey(day, id) { return `${getTodayDateStr()}_${id}`; }
+        function getStorageKey(day, id) { return `${getSelectedDateStr()}_${id}`; }
         function getSetCount(targetStr, type) { return (type === 'cardio') ? 1 : (parseInt(targetStr?.match(/^(\d+)/)?.[1]) || 1); }
 
         function saveData() { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appData)); }
@@ -859,7 +871,7 @@
 
         window.saveSet = function(exId, setIndex, field, value) {
             const key = getStorageKey(selectedDay, exId);
-            if(!appData.workouts[key]) appData.workouts[key] = { sets: [], date: getTodayDateStr(), exerciseId: exId };
+            if(!appData.workouts[key]) appData.workouts[key] = { sets: [], date: getSelectedDateStr(), exerciseId: exId };
             if(!appData.workouts[key].sets[setIndex]) appData.workouts[key].sets[setIndex] = {w:'', r:'', t:''};
             appData.workouts[key].sets[setIndex][field] = value;
             saveData();
@@ -870,7 +882,7 @@
 
         window.saveRating = function(exId, rating) {
             const key = getStorageKey(selectedDay, exId);
-            if(!appData.workouts[key]) appData.workouts[key] = { sets: [], date: getTodayDateStr(), exerciseId: exId };
+            if(!appData.workouts[key]) appData.workouts[key] = { sets: [], date: getSelectedDateStr(), exerciseId: exId };
             appData.workouts[key].rating = rating;
             saveData();
             showToast();
@@ -878,7 +890,7 @@
         }
 
         window.toggleMeal = function(mealId) {
-            const dateKey = getTodayDateStr();
+            const dateKey = getSelectedDateStr();
             if(!appData.meals[dateKey]) appData.meals[dateKey] = {};
             appData.meals[dateKey][mealId] = !appData.meals[dateKey][mealId];
             saveData();
@@ -897,9 +909,9 @@
 
         // --- BONUS EXERCISES LOGIC ---
         window.openAddExModal = function(exId) {
-            if (typeof exId !== 'string') exId = null; // Fix: prevent event object from being processed as an ID
+            if (typeof exId !== 'string') exId = null; 
             
-            const dateKey = getTodayDateStr();
+            const dateKey = getSelectedDateStr();
             const modal = document.getElementById('addExModal');
             const nameInput = document.getElementById('newExName');
             const targetInput = document.getElementById('newExTarget');
@@ -930,7 +942,7 @@
             const name = document.getElementById('newExName').value.trim();
             const target = document.getElementById('newExTarget').value.trim();
             const exId = document.getElementById('editExId').value;
-            const dateKey = getTodayDateStr();
+            const dateKey = getSelectedDateStr();
 
             if (!name) return;
 
@@ -968,7 +980,7 @@
             const exId = document.getElementById('editExId').value;
             if (!exId) return;
             
-            const dateKey = getTodayDateStr();
+            const dateKey = getSelectedDateStr();
             if (appData.extraExercises && appData.extraExercises[dateKey] && appData.extraExercises[dateKey][activeTab]) {
                 const list = appData.extraExercises[dateKey][activeTab];
                 appData.extraExercises[dateKey][activeTab] = list.filter(e => e.id !== exId);
@@ -1038,13 +1050,13 @@
         };
 
         function getHistory(exName) {
-            const today = getTodayDateStr();
+            const selectedDate = getSelectedDateStr();
             const matchingIds = new Set();
             Object.values(workoutData).forEach(day => { 
                 day.AM.concat(day.PM).forEach(ex => { if(ex.name === exName) matchingIds.add(ex.id); });
             });
             return Object.values(appData.workouts)
-                .filter(d => (matchingIds.has(d.exerciseId) || (d.exerciseId && d.exerciseId.startsWith('bonus_'))) && d.date !== today)
+                .filter(d => (matchingIds.has(d.exerciseId) || (d.exerciseId && d.exerciseId.startsWith('bonus_'))) && d.date !== selectedDate)
                 .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
         }
 
