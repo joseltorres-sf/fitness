@@ -127,7 +127,10 @@
     <!-- Header -->
     <div class="w-full max-w-2xl mx-auto mb-6 flex justify-between items-end reveal-up">
         <div>
-            <h1 class="text-2xl md:text-3xl font-medium tracking-tight text-brand-text">FITNESS</h1>
+            <h1 class="text-2xl md:text-3xl font-medium tracking-tight text-brand-text flex items-center gap-2">
+                FITNESS
+                <button id="returnTodayBtn" onclick="returnToToday()" class="hidden text-[9px] bg-brand-surface border border-brand-line px-2 py-1 font-mono uppercase text-brand-text hover:bg-brand-line/50 transition-colors">Today</button>
+            </h1>
             <p class="font-mono text-[10px] tracking-[0.2em] text-brand-muted uppercase mt-1" id="currentDate">LOADING DATE...</p>
         </div>
         
@@ -261,9 +264,10 @@
 
                     <!-- Add New Form -->
                     <div class="border border-brand-line bg-brand-surface p-4 mt-6">
-                        <p class="font-mono text-[10px] tracking-[0.1em] text-brand-text font-bold uppercase mb-4 flex items-center gap-1.5"><i data-lucide="plus" width="12"></i> Add Custom Exercise</p>
+                        <p class="font-mono text-[10px] tracking-[0.1em] text-brand-text font-bold uppercase mb-4 flex items-center gap-1.5"><i data-lucide="plus" width="12"></i> Add/Edit Exercise</p>
                         
                         <div class="space-y-3">
+                            <input type="hidden" id="editExIndex" value="-1">
                             <div>
                                 <label class="block font-mono text-[9px] uppercase text-brand-muted mb-1">Name</label>
                                 <input type="text" id="editExName" class="w-full bg-brand-base border border-brand-line focus:border-brand-text text-brand-text text-sm p-2 outline-none font-medium placeholder-brand-muted/30" placeholder="e.g. Muscle-ups">
@@ -285,9 +289,14 @@
                                 </div>
                             </div>
 
-                            <button onclick="saveRoutineExercise()" class="w-full bg-brand-text text-brand-base font-mono text-[10px] uppercase py-3 mt-2 hover:opacity-80 transition-colors">
-                                Add to Session
-                            </button>
+                            <div class="flex gap-2">
+                                <button id="cancelEditBtn" onclick="resetRoutineEditForm()" class="hidden w-1/3 border border-brand-line text-brand-text bg-brand-base font-mono text-[10px] uppercase py-3 mt-2 hover:bg-brand-surface transition-colors">
+                                    Cancel
+                                </button>
+                                <button id="saveRoutineBtn" onclick="saveRoutineExercise()" class="w-full bg-brand-text text-brand-base font-mono text-[10px] uppercase py-3 mt-2 hover:opacity-80 transition-colors">
+                                    Add to Session
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -364,25 +373,35 @@
     <!-- Plate Calculator Modal -->
     <div id="calcModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('calcModal')"></div>
-        <div class="relative bg-brand-base border border-brand-line w-full max-w-md industrial-shadow">
-             <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center">
+        <div class="relative bg-brand-base border border-brand-line w-full max-w-md industrial-shadow flex flex-col max-h-[90vh]">
+             <div class="px-6 py-4 border-b border-brand-line bg-brand-surface flex justify-between items-center shrink-0">
                 <h3 class="font-mono text-[10px] tracking-[0.2em] text-brand-text uppercase flex items-center gap-2">
                     <i data-lucide="disc" width="14" height="14"></i> Plate Calc
                 </h3>
                 <button onclick="closeModal('calcModal')"><i data-lucide="x" width="16" class="text-brand-muted"></i></button>
             </div>
-            <div class="p-8">
-                <div class="mb-6">
-                    <label class="block font-mono text-[10px] tracking-[0.15em] text-brand-muted uppercase mb-2">Target Weight (Lbs)</label>
-                    <div class="flex items-center border-b border-brand-line focus-within:border-brand-forest transition-colors py-1">
-                        <input type="number" id="targetWeight" oninput="calculatePlates()" 
-                            class="w-full bg-transparent text-brand-text text-3xl font-medium outline-none font-mono placeholder-brand-muted/30" placeholder="225">
-                    </div>
+            <div class="p-6 overflow-y-auto hide-scrollbar">
+                
+                <div class="mb-6 text-center">
+                    <p class="font-mono text-[10px] tracking-[0.15em] text-brand-muted uppercase mb-1">Total Weight</p>
+                    <div id="calcTotalDisplay" class="text-4xl font-medium text-brand-text font-mono">0 lbs</div>
+                </div>
+
+                <!-- Plate Buttons -->
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    <button onclick="addPlate('bar')" class="col-span-3 py-3 border border-brand-line bg-brand-surface text-brand-text font-mono text-xs uppercase hover:bg-brand-text hover:text-brand-base transition-colors">Add Bar (45)</button>
+                    <button onclick="addPlate(45)" class="py-3 border border-brand-line bg-brand-surface text-brand-text font-mono text-xs hover:bg-brand-text hover:text-brand-base transition-colors">+ 45</button>
+                    <button onclick="addPlate(35)" class="py-3 border border-brand-line bg-brand-surface text-brand-text font-mono text-xs hover:bg-brand-text hover:text-brand-base transition-colors">+ 35</button>
+                    <button onclick="addPlate(25)" class="py-3 border border-brand-line bg-brand-surface text-brand-text font-mono text-xs hover:bg-brand-text hover:text-brand-base transition-colors">+ 25</button>
+                    <button onclick="addPlate(10)" class="py-3 border border-brand-line bg-brand-surface text-brand-text font-mono text-xs hover:bg-brand-text hover:text-brand-base transition-colors">+ 10</button>
+                    <button onclick="addPlate(5)" class="py-3 border border-brand-line bg-brand-surface text-brand-text font-mono text-xs hover:bg-brand-text hover:text-brand-base transition-colors">+ 5</button>
+                    <button onclick="clearPlates()" class="py-3 border border-rust text-rust font-mono text-xs uppercase hover:bg-rust hover:text-white transition-colors">Clear</button>
                 </div>
                 
-                <div class="bg-brand-surface border border-brand-line p-4 min-h-[140px] flex flex-col items-center justify-center gap-4">
-                    <div id="calcResult" class="font-mono text-xs uppercase text-brand-muted">Enter weight > 45</div>
-                    <div id="platesVisual" class="flex gap-1 items-center justify-center h-20 w-full relative"></div>
+                <!-- Visual Display -->
+                <div class="bg-brand-surface border border-brand-line p-4 min-h-[140px] flex flex-col items-center justify-center gap-4 overflow-x-auto hide-scrollbar">
+                    <div id="calcResult" class="font-mono text-xs uppercase text-brand-muted shrink-0">Empty</div>
+                    <div id="platesVisual" class="flex items-center justify-center h-24 min-w-full relative shrink-0"></div>
                 </div>
             </div>
         </div>
@@ -402,7 +421,7 @@
             <!-- Tabs -->
             <div class="flex border-b border-brand-line shrink-0 font-mono text-[10px] uppercase tracking-widest bg-brand-surface">
                 <button onclick="setStatsTab('consistency')" id="tab-st-consistency" class="flex-1 py-3 text-brand-text bg-brand-base border-r border-transparent transition-colors">7-Day Consistency</button>
-                <button onclick="setStatsTab('progression')" id="tab-st-progression" class="flex-1 py-3 text-brand-muted border-l border-brand-line hover:text-brand-text transition-colors">Progression</button>
+                <button onclick="setStatsTab('progression')" id="tab-st-progression" class="flex-1 py-3 text-brand-muted border-l border-brand-line hover:text-brand-text transition-colors">Progression Volume</button>
             </div>
 
             <div class="p-6 md:p-8 overflow-y-auto hide-scrollbar flex-1 relative min-h-[300px]">
@@ -455,7 +474,7 @@
             'Monday': {
                 AM: [
                     { id: 'm_am_1', name: 'Incline Walk (Zone 2)', target: '25 mins', type: 'cardio' },
-                    { id: 'm_am_2', name: 'DB Lateral Raises', target: '4 x 15-20', type: 'reps_only' },
+                    { id: 'm_am_2', name: 'DB Lateral Raises', target: '4 x 15-20' }, // Removed reps_only tag
                     { id: 'm_am_3', name: 'Tricep Rope Pushdowns', target: '3 x 12-15' },
                     { id: 'm_am_4', name: 'Hanging Leg Raises', target: '3 x Failure', type: 'reps_only' },
                     { id: 'm_am_5', name: 'Plank', target: '3 x Max Time', type: 'duration' }
@@ -502,7 +521,7 @@
             'Thursday': {
                 AM: [
                     { id: 'th_am_1', name: 'Incline Walk (Zone 2)', target: '25 mins', type: 'cardio' },
-                    { id: 'th_am_2', name: 'DB Lateral Raises', target: '4 x 15-20', type: 'reps_only' },
+                    { id: 'th_am_2', name: 'DB Lateral Raises', target: '4 x 15-20' }, // Removed reps_only tag
                     { id: 'th_am_3', name: 'Tricep Rope Pushdowns', target: '3 x 12-15' }
                 ],
                 PM: [
@@ -572,8 +591,8 @@
 
         // --- UI STATE & DATE HELPERS ---
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        let currentDayIdx = new Date().getDay();
-        let selectedDay = days[currentDayIdx]; // Locked to today
+        let viewingDate = new Date();
+        let selectedDay = days[viewingDate.getDay()];
         let activeTab = (new Date().getHours() < 12) ? 'AM' : 'PM';
 
         // Robust Local Date Generator
@@ -587,7 +606,7 @@
         }
 
         function getSelectedDateStr() {
-            return getTodayDateStr();
+            return getLocalISOString(viewingDate);
         }
 
         // Global Dictionary Helper
@@ -635,9 +654,37 @@
         }
 
         function updateDateHeader() {
-            const today = new Date();
             const options = { weekday: 'long', month: 'long', day: 'numeric' };
-            document.getElementById('currentDate').innerText = today.toLocaleDateString('en-US', options);
+            document.getElementById('currentDate').innerText = viewingDate.toLocaleDateString('en-US', options);
+            
+            const isToday = getLocalISOString(new Date()) === getLocalISOString(viewingDate);
+            if (!isToday) {
+                document.getElementById('returnTodayBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('returnTodayBtn').classList.add('hidden');
+            }
+        }
+
+        window.returnToToday = function() {
+            viewingDate = new Date();
+            selectedDay = days[viewingDate.getDay()];
+            updateDateHeader();
+            renderContent();
+            updateUrgencyUI();
+        }
+
+        window.jumpToDay = function(dayIdx) {
+            const today = new Date();
+            const currentDay = today.getDay();
+            const diff = dayIdx - currentDay;
+            viewingDate = new Date(today);
+            viewingDate.setDate(today.getDate() + diff);
+            selectedDay = days[dayIdx];
+            
+            updateDateHeader();
+            renderContent();
+            updateUrgencyUI();
+            closeModal('weeklyModal');
         }
 
         function updateTabVisibility() {
@@ -761,7 +808,8 @@
                                 const cValT = setData.t !== undefined ? setData.t : (histSet.t || '');
                                 const cValW = setData.w !== undefined ? setData.w : (histSet.w || '');
                                 const cValR = setData.r !== undefined ? setData.r : (histSet.r || '');
-                                inputs = `<input type="number" id="t-${ex.id}-${i}" class="${inputBase}" placeholder="Min" value="${cValT}" onchange="saveSet('${ex.id}', ${i})">
+                                // Type changed to text for Time to allow Min:Sec
+                                inputs = `<input type="text" id="t-${ex.id}-${i}" class="${inputBase}" placeholder="Min:Sec" value="${cValT}" onchange="saveSet('${ex.id}', ${i})">
                                           <input type="number" id="w-${ex.id}-${i}" step="0.1" class="${inputBase}" placeholder="Spd" value="${cValW}" onchange="saveSet('${ex.id}', ${i})">
                                           <input type="number" id="r-${ex.id}-${i}" step="0.5" class="${inputBase}" placeholder="Inc" value="${cValR}" onchange="saveSet('${ex.id}', ${i})">`;
                             } else if (ex.type === 'reps_only' || ex.type === 'duration') {
@@ -824,7 +872,6 @@
                 }
             }
             lucide.createIcons();
-            updateUrgencyUI(); 
         }
 
         // --- OVERALL CONSISTENCY TRACKING ---
@@ -1016,6 +1063,17 @@
             }
         }
 
+        // Helper to parse things like "25:30" into minutes
+        function parseTimeField(t) {
+            if (!t) return 0;
+            const str = t.toString().trim();
+            if (str.includes(':')) {
+                const parts = str.split(':');
+                return parseInt(parts[0] || 0) + (parseInt(parts[1] || 0) / 60);
+            }
+            return parseFloat(str) || 0;
+        }
+
         window.renderProgressionChart = function() {
             const select = document.getElementById('progressExSelect');
             const area = document.getElementById('progressChartArea');
@@ -1028,36 +1086,45 @@
 
             const dict = buildExerciseDict();
             
-            // Gather all completed sessions matching the name
+            // Gather all completed sessions matching the name, calculate TOTAL Volume
             const sessionsRaw = Object.values(appData.workouts)
                 .filter(d => dict[d.exerciseId] && dict[d.exerciseId].name === exName)
                 .map(d => {
                     const exDef = dict[d.exerciseId];
-                    let maxVal = 0;
+                    let totalVal = 0;
                     let metricLabel = 'lbs';
+                    
                     if (exDef.type === 'cardio') {
-                        maxVal = Math.max(...d.sets.map(s => parseFloat(s.t) || 0));
+                        totalVal = d.sets.reduce((sum, s) => sum + parseTimeField(s.t), 0);
                         metricLabel = 'mins';
-                    } else if (exDef.type === 'reps_only' || exDef.type === 'duration') {
-                        maxVal = Math.max(...d.sets.map(s => parseInt(s.r) || 0));
-                        metricLabel = exDef.type === 'duration' ? 'sec/min' : 'reps';
+                    } else if (exDef.type === 'reps_only') {
+                        totalVal = d.sets.reduce((sum, s) => sum + (parseFloat(s.r) || 0), 0);
+                        metricLabel = 'reps';
+                    } else if (exDef.type === 'duration') {
+                        totalVal = d.sets.reduce((sum, s) => sum + parseTimeField(s.r), 0);
+                        metricLabel = 'time';
                     } else {
-                        maxVal = Math.max(...d.sets.map(s => parseFloat(s.w) || 0));
+                        // Strength volume = Weight * Reps per set
+                        totalVal = d.sets.reduce((sum, s) => sum + ((parseFloat(s.w) || 0) * (parseFloat(s.r) || 0)), 0);
+                        metricLabel = 'lbs';
                     }
-                    // Extract Date and reset to midnight local to avoid timezone shift grouping
+                    
                     const dateParts = d.date.split('-');
                     const dateObj = new Date(dateParts[0], dateParts[1]-1, dateParts[2]);
-                    return { dateObj: dateObj, dateStr: d.date, val: maxVal, metric: metricLabel };
+                    return { dateObj: dateObj, dateStr: d.date, val: Math.round(totalVal * 10) / 10, metric: metricLabel };
                 })
                 .filter(s => s.val > 0)
                 .sort((a, b) => a.dateObj - b.dateObj);
 
-            // Deduplicate by date (take highest daily max)
+            // Deduplicate by date (sum daily volume if they did it multiple times)
             const uniqueSessions = [];
             sessionsRaw.forEach(s => {
                 const existing = uniqueSessions.find(u => u.dateStr === s.dateStr);
-                if(existing) existing.val = Math.max(existing.val, s.val);
-                else uniqueSessions.push(s);
+                if(existing) {
+                    existing.val += s.val;
+                } else {
+                    uniqueSessions.push({...s});
+                }
             });
 
             if (uniqueSessions.length === 0) {
@@ -1110,6 +1177,7 @@
 
             const firstDate = uniqueSessions[0].dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const lastDate = uniqueSessions[uniqueSessions.length-1].dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const globalMetric = uniqueSessions[0].metric;
 
             let svg = `
                 <svg viewBox="0 0 ${width} ${height}" class="w-full h-auto overflow-visible text-brand-text">
@@ -1140,12 +1208,25 @@
             svg += `<text x="${padX}" y="${height-padY + 20}" text-anchor="middle" fill="var(--brand-muted)" font-family="monospace" font-size="9" uppercase>${firstDate}</text>`;
             svg += `<text x="${width-padX}" y="${height-padY + 20}" text-anchor="middle" fill="var(--brand-muted)" font-family="monospace" font-size="9" uppercase>${lastDate}</text>`;
             svg += `</svg>`;
+            
+            svg += `<div class="absolute top-0 right-4 font-mono text-[9px] text-brand-muted uppercase tracking-widest bg-brand-surface border-b border-l border-brand-line px-2 py-1">Total Vol (${globalMetric})</div>`;
 
             area.innerHTML = svg;
         };
 
         // --- ELEGANT URGENCY SYSTEM ---
         function updateUrgencyUI() {
+            // Only show urgency markers if viewing today
+            const isToday = getLocalISOString(new Date()) === getLocalISOString(viewingDate);
+            if (!isToday) {
+                ['AM', 'PM', 'FOOD'].forEach(id => {
+                    const dot = document.getElementById(`dot-${id}`);
+                    if(dot) dot.className = 'hidden';
+                });
+                meals.forEach(m => applyUrgencyMeal(m.id, null)); 
+                return;
+            }
+
             const amUrg = getUrgencyLevel('08:00', isSessionCompleted('AM')); 
             applyUrgencyTab('AM', amUrg);
 
@@ -1352,6 +1433,8 @@
             const list = document.getElementById('editExerciseList');
             list.innerHTML = '';
             
+            resetRoutineEditForm();
+
             const exercises = workoutData[day]?.[session] || [];
             if(exercises.length === 0) {
                 list.innerHTML = `<div class="text-[10px] font-mono text-brand-muted uppercase py-6 text-center border border-dashed border-brand-line bg-brand-base">Rest Session (Empty)</div>`;
@@ -1364,14 +1447,42 @@
                                 <div class="text-sm text-brand-text font-medium">${ex.name}</div>
                                 <div class="text-[9px] font-mono text-brand-muted uppercase tracking-wider mt-0.5">${ex.target} | ${typeDisplay}</div>
                             </div>
-                            <button onclick="deleteRoutineExercise('${day}', '${session}', ${idx})" class="text-brand-muted hover:text-rust transition-colors p-2 -mr-2">
-                                <i data-lucide="trash-2" width="16" height="16"></i>
-                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="editRoutineExercise('${day}', '${session}', ${idx})" class="text-brand-muted hover:text-brand-text transition-colors p-2">
+                                    <i data-lucide="edit-2" width="16" height="16"></i>
+                                </button>
+                                <button onclick="deleteRoutineExercise('${day}', '${session}', ${idx})" class="text-brand-muted hover:text-rust transition-colors p-2 -mr-2">
+                                    <i data-lucide="trash-2" width="16" height="16"></i>
+                                </button>
+                            </div>
                         </div>
                     `;
                 });
             }
             lucide.createIcons();
+        };
+
+        window.editRoutineExercise = function(day, session, index) {
+            const ex = workoutData[day][session][index];
+            document.getElementById('editExName').value = ex.name;
+            document.getElementById('editExTarget').value = ex.target;
+            document.getElementById('editExType').value = ex.type || 'strength';
+            document.getElementById('editExIndex').value = index;
+            
+            document.getElementById('saveRoutineBtn').innerText = "Update Exercise";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            
+            document.getElementById('editExName').focus();
+        };
+
+        window.resetRoutineEditForm = function() {
+            document.getElementById('editExName').value = '';
+            document.getElementById('editExTarget').value = '';
+            document.getElementById('editExType').value = 'strength';
+            document.getElementById('editExIndex').value = "-1";
+            
+            document.getElementById('saveRoutineBtn').innerText = "Add to Session";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
         };
 
         window.saveRoutineExercise = function() {
@@ -1380,11 +1491,12 @@
             const name = document.getElementById('editExName').value.trim();
             const target = document.getElementById('editExTarget').value.trim();
             const type = document.getElementById('editExType').value;
+            const editIdx = parseInt(document.getElementById('editExIndex').value);
             
             if(!name) return;
 
             const newEx = {
-                id: `c_${Date.now()}`,
+                id: editIdx > -1 ? workoutData[day][session][editIdx].id : `c_${Date.now()}`,
                 name: name,
                 target: target || (type === 'cardio' ? '25 mins' : '3 x 10-12')
             };
@@ -1393,13 +1505,15 @@
             if(!workoutData[day]) workoutData[day] = { AM: [], PM: [] };
             if(!workoutData[day][session]) workoutData[day][session] = [];
             
-            workoutData[day][session].push(newEx);
+            if (editIdx > -1) {
+                workoutData[day][session][editIdx] = newEx;
+            } else {
+                workoutData[day][session].push(newEx);
+            }
             
             localStorage.setItem(CUSTOM_ROUTINE_KEY, JSON.stringify(workoutData));
             
-            document.getElementById('editExName').value = '';
-            document.getElementById('editExTarget').value = '';
-            
+            resetRoutineEditForm();
             renderRoutineEditor();
             renderContent();
             updateConsistencyUI();
@@ -1519,6 +1633,7 @@
         window.openCalcModal = () => document.getElementById('calcModal').classList.remove('hidden');
         
         window.openWeeklyModal = () => {
+            const standardDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
             
             // Map the workout focus to each day for the UI labels
@@ -1539,10 +1654,11 @@
                 const pm = workoutData[day].PM || [];
                 const isOptional = day === 'Sunday';
                 const dayBadge = isOptional ? `<span class="ml-2 bg-brand-line/40 text-brand-muted px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest font-mono align-middle relative -top-[1px]">Optional</span>` : '';
+                const dayIdx = standardDays.indexOf(day);
                 
                 html += `<div class="mb-4 last:mb-0 border border-brand-line bg-brand-base">`;
-                html += `<div class="bg-brand-surface px-4 py-2 border-b border-brand-line flex justify-between items-center">`;
-                html += `<div><span class="font-mono text-[12px] uppercase tracking-wider font-bold text-brand-text">${day}</span>${dayBadge}</div>`;
+                html += `<div class="bg-brand-surface px-4 py-2 border-b border-brand-line flex justify-between items-center cursor-pointer hover:bg-brand-line/50 transition-colors group" onclick="jumpToDay(${dayIdx})">`;
+                html += `<div><span class="font-mono text-[12px] uppercase tracking-wider font-bold text-brand-text group-hover:underline">${day}</span>${dayBadge}</div>`;
                 html += `<span class="font-mono text-[9px] uppercase tracking-widest text-brand-accent text-right">${dayLabels[day]}</span>`;
                 html += `</div>`;
                 html += `<div class="p-4 flex flex-col gap-4">`;
@@ -1624,23 +1740,52 @@
             }
         };
 
-        window.calculatePlates = () => {
-            const val = parseInt(document.getElementById('targetWeight').value);
-            const res = document.getElementById('calcResult');
+        // --- NEW PLATE CALCULATOR LOGIC ---
+        let calcTotalWeight = 0;
+        let calcPlatesList = [];
+        
+        window.addPlate = (plate) => {
+            if (plate === 'bar') {
+                calcTotalWeight += 45;
+                calcPlatesList.unshift('bar');
+            } else {
+                calcTotalWeight += (plate * 2);
+                calcPlatesList.push(plate);
+            }
+            updatePlateVisuals();
+        };
+        
+        window.clearPlates = () => {
+            calcTotalWeight = 0;
+            calcPlatesList = [];
+            updatePlateVisuals();
+        };
+
+        window.updatePlateVisuals = () => {
+            document.getElementById('calcTotalDisplay').innerText = `${calcTotalWeight} lbs`;
             const vis = document.getElementById('platesVisual');
-            if(!val || val < 45) { res.innerText = "> 45lbs"; vis.innerHTML = ''; return; }
-            let weight = (val - 45) / 2;
+            const res = document.getElementById('calcResult');
+            
+            if (calcTotalWeight === 0) {
+                res.innerText = "Empty";
+                vis.innerHTML = '';
+                return;
+            }
+            
             let html = '';
-            [45, 35, 25, 10, 5, 2.5].forEach(p => {
-                while(weight >= p) {
-                    weight -= p;
-                    let h = (p === 45) ? 'h-24' : (p === 35) ? 'h-20' : (p === 25) ? 'h-16' : (p === 10) ? 'h-12' : (p === 5) ? 'h-8' : 'h-6';
-                    let c = (p === 5) ? 'bg-brass' : (p === 2.5) ? 'bg-rust' : 'bg-brand-text';
-                    html += `<div class="${h} w-4 ${c} rounded shadow-sm z-10"></div>`;
-                }
+            // Only draw plates if there are any, sort descending for visual stacking logic
+            let platesToDraw = calcPlatesList.filter(p => p !== 'bar').sort((a,b) => b-a);
+            
+            platesToDraw.forEach(p => {
+                let h = (p === 45) ? 'h-24' : (p === 35) ? 'h-20' : (p === 25) ? 'h-16' : (p === 10) ? 'h-12' : (p === 5) ? 'h-8' : 'h-6';
+                let c = (p === 5) ? 'bg-brass' : (p === 2.5) ? 'bg-rust' : 'bg-brand-text';
+                html += `<div class="${h} w-4 ${c} rounded shadow-sm z-10 shrink-0 border border-brand-base/20"></div>`;
             });
-            res.innerText = "Plates per side";
-            vis.innerHTML = `<div class="absolute w-full h-3 bg-brand-line rounded-full top-1/2 -translate-y-1/2"></div><div class="flex items-center gap-1.5 z-10 relative">${html}</div>`;
+            
+            res.innerText = calcPlatesList.includes('bar') ? "Bar + Plates (1 side shown)" : "Plates Only (1 side shown)";
+            let barHtml = calcPlatesList.includes('bar') ? `<div class="absolute w-full h-3 bg-brand-line rounded-full top-1/2 -translate-y-1/2"></div><div class="absolute left-0 w-8 h-4 bg-brand-line rounded-r-sm top-1/2 -translate-y-1/2 z-0"></div>` : `<div class="absolute w-full h-3 bg-brand-line rounded-full top-1/2 -translate-y-1/2"></div>`;
+            
+            vis.innerHTML = `${barHtml}<div class="flex items-center gap-1.5 z-10 relative ml-8">${html}</div>`;
         };
 
         function getHistory(exName) {
@@ -1658,5 +1803,4 @@
     </script>
 </body>
 </html>
-
 
