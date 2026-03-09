@@ -187,6 +187,16 @@
     </footer>
 
     <!-- Modals -->
+
+    <!-- PR Celebration Modal -->
+    <div id="prModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 pointer-events-none">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-500 opacity-0" id="prModalBg"></div>
+        <div class="relative bg-brand-base border border-brass p-8 industrial-shadow flex flex-col items-center justify-center transform scale-90 opacity-0 transition-all duration-500 w-64 h-64" id="prModalContent">
+            <i data-lucide="trophy" width="64" height="64" class="text-brass mb-4 drop-shadow-md"></i>
+            <h2 class="font-mono text-xl tracking-[0.2em] text-brand-text font-bold uppercase text-center mb-2">NEW PR!</h2>
+            <p class="text-xs text-brand-muted font-mono uppercase tracking-widest text-center" id="prModalText">100 LBS x 10</p>
+        </div>
+    </div>
     
     <!-- Weekly Schedule Modal -->
     <div id="weeklyModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
@@ -420,7 +430,7 @@
 
             <!-- Tabs -->
             <div class="flex border-b border-brand-line shrink-0 font-mono text-[10px] uppercase tracking-widest bg-brand-surface">
-                <button onclick="setStatsTab('consistency')" id="tab-st-consistency" class="flex-1 py-3 text-brand-text bg-brand-base border-r border-transparent transition-colors">7-Day Consistency</button>
+                <button onclick="setStatsTab('consistency')" id="tab-st-consistency" class="flex-1 py-3 text-brand-text bg-brand-base border-r border-transparent transition-colors">6-Day Compliance</button>
                 <button onclick="setStatsTab('progression')" id="tab-st-progression" class="flex-1 py-3 text-brand-muted border-l border-brand-line hover:text-brand-text transition-colors">Progression Volume</button>
             </div>
 
@@ -469,6 +479,7 @@
         let appData = { workouts: {}, meals: {}, extraExercises: {} };
         const LOCAL_STORAGE_KEY = 'recomp_offline_data';
         const CUSTOM_ROUTINE_KEY = 'recomp_custom_routine';
+        window.celebratedPRs = {}; // Session runtime memory to avoid PR spam
 
         const defaultWorkoutData = {
             'Monday': {
@@ -639,11 +650,29 @@
                 }
             } catch (e) { console.error(e); }
             
-            // Load Custom Routine Settings
+            // Load Custom Routine Settings & Automatic Migrations
             try {
                 const customRoutine = localStorage.getItem(CUSTOM_ROUTINE_KEY);
                 if (customRoutine) {
                     workoutData = JSON.parse(customRoutine);
+                    
+                    // MIGRATION: Auto-fix old save files where DB Lateral raises lacked weights
+                    let migrated = false;
+                    Object.values(workoutData).forEach(day => {
+                        ['AM', 'PM'].forEach(session => {
+                            if (day[session]) {
+                                day[session].forEach(ex => {
+                                    if (ex.name.includes('Lateral Raises') && ex.type === 'reps_only') {
+                                        delete ex.type; // Revert back to strength
+                                        migrated = true;
+                                    }
+                                });
+                            }
+                        });
+                    });
+                    if (migrated) {
+                        localStorage.setItem(CUSTOM_ROUTINE_KEY, JSON.stringify(workoutData));
+                    }
                 }
             } catch(e) { console.error(e); }
 
@@ -709,6 +738,65 @@
             renderContent();
         }
 
+        // --- PR CALCULATORS ---
+        function parseNumericSafe(str) {
+            if (!str) return 0;
+            const match = str.toString().match(/[\d.]+/);
+            return match ? parseFloat(match[0]) : 0;
+        }
+
+        function getSetScore(s, type) {
+            if (!s) return 0;
+            if (type === 'cardio') {
+                return parseTimeField(s.t) * (parseNumericSafe(s.w) || 1);
+            } else if (type === 'reps_only') {
+                return parseNumericSafe(s.r) || 0;
+            } else if (type === 'duration') {
+                return parseTimeField(s.r);
+            } else {
+                // Heavily favor load over volume to determine max set
+                return (parseNumericSafe(s.w) || 0) * 10000 + (parseNumericSafe(s.r) || 0);
+            }
+        }
+
+        function getSessionPRScore(sessionData, type) {
+            if (!sessionData || !sessionData.sets) return 0;
+            return Math.max(...sessionData.sets.map(s => getSetScore(s, type)), 0);
+        }
+
+        function formatSetText(s, type) {
+            if (!s) return '-';
+            if (type === 'cardio') {
+                return `${s.t || '-'}m / ${s.w || '-'}spd / ${s.r || '-'}inc`;
+            } else if (type === 'reps_only' || type === 'duration') {
+                return `${s.r || '-'}`;
+            } else {
+                return s.w ? `${s.w}x${s.r || '-'}` : (s.r || '-');
+            }
+        }
+
+        function formatSessionSets(sets, type) {
+            if (!sets) return '';
+            return sets.map(s => formatSetText(s, type)).join(', ');
+        }
+
+        function getHistoricalSessions(exName) {
+            const matchingIds = new Set();
+            // Fetch Standard Routine Matches
+            Object.values(workoutData).forEach(day => { 
+                day.AM.concat(day.PM).forEach(ex => { if(ex.name === exName) matchingIds.add(ex.id); });
+            });
+            // Fetch Bonus Routine Matches
+            if(appData.extraExercises) {
+                Object.values(appData.extraExercises).forEach(dayData => {
+                    (dayData.AM || []).concat(dayData.PM || []).forEach(ex => {
+                        if (ex.name === exName) matchingIds.add(ex.id);
+                    });
+                });
+            }
+            return Object.values(appData.workouts).filter(d => matchingIds.has(d.exerciseId));
+        }
+
         function renderContent() {
             const content = document.getElementById('content');
             content.innerHTML = '';
@@ -755,39 +843,53 @@
                     allExercises.forEach(ex => {
                         const key = getStorageKey(selectedDay, ex.id);
                         const todayData = appData.workouts[key] || {};
-                        const history = getHistory(ex.name);
+                        
+                        const histSessions = getHistoricalSessions(ex.name);
+                        const pastSessions = histSessions.filter(s => s.date !== dateKey).sort((a,b) => new Date(b.date) - new Date(a.date));
+                        const lastSession = pastSessions[0]; // Most recent past session
+                        
+                        // Find All-Time Best Session for PR tracking
+                        let bestScore = -1;
+                        let bestSession = null;
+                        histSessions.forEach(s => {
+                            const sc = getSessionPRScore(s, ex.type);
+                            if (sc > bestScore && sc > 0) {
+                                bestScore = sc;
+                                bestSession = s;
+                            }
+                        });
+
                         const numSets = getSetCount(ex.target, ex.type);
 
                         let historyHTML = '';
-                        if (history) {
-                            let text = '';
-                            if (ex.type === 'cardio') {
-                                text = `${history.sets?.[0]?.t || '-'}m / ${history.sets?.[0]?.w || '-'}spd / ${history.sets?.[0]?.r || '-'}inc`;
-                            } else if (ex.type === 'reps_only' || ex.type === 'duration') {
-                                text = `${(history.sets||[]).map(s => s.r || '-').join(', ')}`;
-                            } else {
-                                text = `${(history.sets||[]).map(s => s.w ? `${s.w}x${s.r}` : s.r || '-').join(', ')}`;
-                            }
-                            
+                        if (lastSession) {
+                            const lastText = formatSessionSets(lastSession.sets, ex.type);
+                            const prText = bestSession ? formatSessionSets(bestSession.sets, ex.type) : lastText;
+
                             let ratingDot = '';
-                            if (history.rating) {
+                            if (lastSession.rating) {
                                 let dotColor = 'bg-brand-line';
-                                if (history.rating === 'easy') dotColor = 'bg-forest-500';
-                                else if (history.rating === 'med') dotColor = 'bg-brass';
-                                else if (history.rating === 'hard') dotColor = 'bg-rust';
+                                if (lastSession.rating === 'easy') dotColor = 'bg-forest-500';
+                                else if (lastSession.rating === 'med') dotColor = 'bg-brass';
+                                else if (lastSession.rating === 'hard') dotColor = 'bg-rust';
                                 ratingDot = `<span class="w-1.5 h-1.5 rounded-full ${dotColor} inline-block ml-1 relative -top-0.5"></span>`;
                             }
 
                             let noteHtml = '';
-                            if (history.note && history.note.trim() !== '') {
-                                noteHtml = `<div class="mt-1 text-[9px] text-brand-muted normal-case tracking-normal border-t border-brand-line/50 pt-1 flex gap-1"><i data-lucide="message-square" width="8" height="8" class="mt-0.5 shrink-0"></i><span class="truncate" title="${history.note.replace(/"/g, '&quot;')}">${history.note}</span></div>`;
+                            if (lastSession.note && lastSession.note.trim() !== '') {
+                                noteHtml = `<div class="mt-1 text-[9px] text-brand-muted normal-case tracking-normal border-t border-brand-line/50 pt-1 flex gap-1"><i data-lucide="message-square" width="8" height="8" class="mt-0.5 shrink-0"></i><span class="truncate" title="${lastSession.note.replace(/"/g, '&quot;')}">${lastSession.note}</span></div>`;
                             }
 
-                            historyHTML = `<div class="inline-flex flex-col px-2 py-1.5 bg-brand-surface border border-brand-line text-[10px] font-mono uppercase text-brand-muted mb-4 max-w-full">
-                                <div class="flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                            historyHTML = `
+                            <div class="inline-flex flex-col px-2 py-1.5 bg-brand-surface border border-brand-line text-[10px] font-mono uppercase text-brand-muted mb-4 max-w-full cursor-pointer hover:bg-brand-line/50 transition-colors select-none group" onclick="this.querySelector('.hist-last').classList.toggle('hidden'); this.querySelector('.hist-pr').classList.toggle('hidden');">
+                                <div class="hist-last flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis">
                                     <i data-lucide="history" width="10" height="10" class="shrink-0"></i> 
-                                    <span class="truncate">Last: ${text}</span>
+                                    <span class="truncate">Last: ${lastText}</span>
                                     ${ratingDot}
+                                </div>
+                                <div class="hist-pr hidden flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis text-brand-text font-bold">
+                                    <i data-lucide="trophy" width="10" height="10" class="shrink-0 text-brass"></i> 
+                                    <span class="truncate">PR: ${prText}</span>
                                 </div>
                                 ${noteHtml}
                             </div>`;
@@ -796,7 +898,7 @@
                         let setsHTML = `<div class="flex flex-col gap-2 mb-4" id="sets-${ex.id}">`;
                         for(let i=0; i<numSets; i++) {
                             const setData = (todayData.sets && todayData.sets[i]) ? todayData.sets[i] : {};
-                            const histSet = (history && history.sets && history.sets[i]) ? history.sets[i] : {};
+                            const histSet = (lastSession && lastSession.sets && lastSession.sets[i]) ? lastSession.sets[i] : {};
                             
                             const inputBase = "bg-transparent border-b border-brand-line focus:border-brand-forest text-center font-mono text-sm py-1 outline-none transition-colors w-full text-brand-text placeholder-brand-muted/30";
                             
@@ -805,22 +907,30 @@
 
                             if (ex.type === 'cardio') {
                                 gridCols = 'grid-cols-3';
-                                const cValT = setData.t !== undefined ? setData.t : (histSet.t || '');
-                                const cValW = setData.w !== undefined ? setData.w : (histSet.w || '');
-                                const cValR = setData.r !== undefined ? setData.r : (histSet.r || '');
-                                // Type changed to text for Time to allow Min:Sec
-                                inputs = `<input type="text" id="t-${ex.id}-${i}" class="${inputBase}" placeholder="Min:Sec" value="${cValT}" onchange="saveSet('${ex.id}', ${i})">
-                                          <input type="number" id="w-${ex.id}-${i}" step="0.1" class="${inputBase}" placeholder="Spd" value="${cValW}" onchange="saveSet('${ex.id}', ${i})">
-                                          <input type="number" id="r-${ex.id}-${i}" step="0.5" class="${inputBase}" placeholder="Inc" value="${cValR}" onchange="saveSet('${ex.id}', ${i})">`;
+                                const cValT = setData.t !== undefined ? setData.t : '';
+                                const cValW = setData.w !== undefined ? setData.w : '';
+                                const cValR = setData.r !== undefined ? setData.r : '';
+                                const phT = histSet.t ? `Last: ${histSet.t}` : 'Min:Sec';
+                                const phW = histSet.w ? `Last: ${histSet.w}` : 'Spd';
+                                const phR = histSet.r ? `Last: ${histSet.r}` : 'Inc';
+                                
+                                inputs = `<input type="text" inputmode="decimal" id="t-${ex.id}-${i}" class="${inputBase}" placeholder="${phT}" value="${cValT}" onchange="saveSet('${ex.id}', ${i})">
+                                          <input type="text" inputmode="decimal" id="w-${ex.id}-${i}" class="${inputBase}" placeholder="${phW}" value="${cValW}" onchange="saveSet('${ex.id}', ${i})">
+                                          <input type="text" inputmode="decimal" id="r-${ex.id}-${i}" class="${inputBase}" placeholder="${phR}" value="${cValR}" onchange="saveSet('${ex.id}', ${i})">`;
                             } else if (ex.type === 'reps_only' || ex.type === 'duration') {
                                 gridCols = 'grid-cols-1';
-                                const ph = histSet.r ? `Last: ${histSet.r}` : (ex.type === 'duration' ? 'Time' : 'Reps');
-                                inputs = `<input type="text" id="r-${ex.id}-${i}" class="${inputBase}" placeholder="${ph}" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i})">`;
+                                const cValR = setData.r !== undefined ? setData.r : '';
+                                const phR = histSet.r ? `Last: ${histSet.r}` : (ex.type === 'duration' ? 'Time' : 'Reps');
+                                
+                                inputs = `<input type="text" inputmode="decimal" id="r-${ex.id}-${i}" class="${inputBase}" placeholder="${phR}" value="${cValR}" onchange="saveSet('${ex.id}', ${i})">`;
                             } else {
-                                const wVal = (setData.w !== undefined && setData.w !== '') ? setData.w : (histSet.w || '');
-                                const ph = histSet.r ? `Last: ${histSet.r}` : 'Reps';
-                                inputs = `<input type="number" id="w-${ex.id}-${i}" class="${inputBase} autofill-target" placeholder="Lbs" value="${wVal}" onchange="handleFirstSetAutofill('${ex.id}')">
-                                          <input type="number" id="r-${ex.id}-${i}" class="${inputBase}" placeholder="${ph}" value="${setData.r || ''}" onchange="saveSet('${ex.id}', ${i})">`;
+                                const cValW = setData.w !== undefined ? setData.w : '';
+                                const cValR = setData.r !== undefined ? setData.r : '';
+                                const phW = histSet.w ? `Last: ${histSet.w}` : 'Lbs';
+                                const phR = histSet.r ? `Last: ${histSet.r}` : 'Reps';
+                                
+                                inputs = `<input type="text" inputmode="decimal" id="w-${ex.id}-${i}" class="${inputBase} autofill-target" placeholder="${phW}" value="${cValW}" onchange="handleFirstSetAutofill('${ex.id}')">
+                                          <input type="text" inputmode="decimal" id="r-${ex.id}-${i}" class="${inputBase}" placeholder="${phR}" value="${cValR}" onchange="saveSet('${ex.id}', ${i})">`;
                             }
 
                             setsHTML += `<div class="grid grid-cols-[40px_1fr] gap-4 items-center"><span class="font-mono text-[10px] text-brand-muted text-right pr-2 border-r border-brand-line">0${i+1}</span><div class="grid ${gridCols} gap-4">${inputs}</div></div>`;
@@ -877,7 +987,7 @@
         // --- OVERALL CONSISTENCY TRACKING ---
         function updateConsistencyUI() {
             let totalScore = 0;
-            let maxScore = 0;
+            let maxScore = 0; // Max will be 6 (Mon-Sat required 1x/day)
 
             const daysArr = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -886,46 +996,33 @@
                 const ds = getLocalISOString(d);
                 const dayOfWeek = daysArr[d.getDay()];
 
+                let dayDone = false;
+
                 // Eval AM
-                const amEx = workoutData[dayOfWeek].AM;
+                const amEx = workoutData[dayOfWeek].AM || [];
                 if(amEx.length > 0) {
-                    const amDone = amEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t));
-                    // Sunday is Optional - Only adds to maxScore if you did it.
-                    if (dayOfWeek !== 'Sunday') {
-                        maxScore++;
-                        if(amDone) totalScore++;
-                    } else if (amDone) {
-                        maxScore++;
-                        totalScore++;
-                    }
+                    if(amEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t))) dayDone = true;
                 }
                 
                 // Eval PM
-                const pmEx = workoutData[dayOfWeek].PM;
+                const pmEx = workoutData[dayOfWeek].PM || [];
                 if(pmEx.length > 0) {
-                    const pmDone = pmEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t));
-                    // Sunday is Optional
-                    if (dayOfWeek !== 'Sunday') {
-                        maxScore++;
-                        if(pmDone) totalScore++;
-                    } else if (pmDone) {
-                        maxScore++;
-                        totalScore++;
-                    }
+                    if(pmEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t))) dayDone = true;
                 }
                 
-                // Eval Meals
-                maxScore += meals.length;
-                const mData = appData.meals[ds] || {};
-                totalScore += Object.values(mData).filter(v => v).length;
+                // Only evaluate Mon-Sat for percentage tracking
+                if (dayOfWeek !== 'Sunday') {
+                    maxScore++;
+                    if(dayDone) totalScore++;
+                }
             }
 
             const pct = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
             const dot = document.getElementById('consistency-dot');
             
             dot.className = 'absolute -top-1 -right-1 w-2 h-2 rounded-full transition-all duration-500 opacity-100 shadow-sm';
-            if (pct >= 75) dot.classList.add('bg-forest-500');
-            else if (pct >= 40) dot.classList.add('bg-brass');
+            if (pct >= 80) dot.classList.add('bg-forest-500');
+            else if (pct >= 50) dot.classList.add('bg-brass');
             else dot.classList.add('bg-rust');
         }
 
@@ -953,18 +1050,6 @@
                 let amDone = false;
                 if(amExpected) {
                     amDone = amEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t));
-                    if (dayOfWeek !== 'Sunday') {
-                        maxScore++;
-                        if(amDone) totalScore++;
-                    } else {
-                        // Optional handling
-                        if(amDone) {
-                            maxScore++;
-                            totalScore++;
-                        } else {
-                            amExpected = false;
-                        }
-                    }
                 }
 
                 // PM logic
@@ -973,32 +1058,23 @@
                 let pmDone = false;
                 if(pmExpected) {
                     pmDone = pmEx.some(ex => appData.workouts[`${ds}_${ex.id}`]?.sets.some(s => s.w || s.r || s.t));
-                    if (dayOfWeek !== 'Sunday') {
-                        maxScore++;
-                        if(pmDone) totalScore++;
-                    } else {
-                        // Optional handling
-                        if(pmDone) {
-                            maxScore++;
-                            totalScore++;
-                        } else {
-                            pmExpected = false;
-                        }
-                    }
                 }
 
-                // Meals logic
+                // Compliance Tracking (Mon-Sat)
+                if (dayOfWeek !== 'Sunday') {
+                    maxScore++;
+                    if (amDone || pmDone) totalScore++;
+                }
+
+                // Meals logic (Visual only, doesn't impact totalScore/maxScore above)
                 const mData = appData.meals[ds] || {};
                 const mealsEaten = Object.values(mData).filter(v => v).length;
                 const mealTarget = meals.length;
-                
-                maxScore += mealTarget;
-                totalScore += mealsEaten;
+                let mealPct = Math.round((mealsEaten / mealTarget) * 100);
 
                 // Visual Blocks
                 let amClass = amExpected ? (amDone ? 'bg-forest-500' : 'bg-brand-line/40 border border-brand-line') : 'bg-transparent border border-dashed border-brand-line/40';
                 let pmClass = pmExpected ? (pmDone ? 'bg-forest-500' : 'bg-brand-line/40 border border-brand-line') : 'bg-transparent border border-dashed border-brand-line/40';
-                let mealPct = Math.round((mealsEaten / mealTarget) * 100);
 
                 let isToday = i === 0;
 
@@ -1021,7 +1097,7 @@
             document.getElementById('statsContent').innerHTML = `
                 <div class="mb-4 flex justify-between items-end border-b border-brand-line pb-4">
                     <div>
-                        <p class="font-mono text-[10px] tracking-wide text-brand-muted uppercase">7-Day Compliance</p>
+                        <p class="font-mono text-[10px] tracking-wide text-brand-muted uppercase">6-Day Compliance</p>
                         <p class="text-3xl font-medium text-brand-text leading-none mt-1">${pct}%</p>
                     </div>
                 </div>
@@ -1336,6 +1412,37 @@
             setTimeout(() => { t.classList.add('opacity-0'); setTimeout(() => t.innerText = "CHANGES SAVED", 300); }, 1500);
         }
 
+        function triggerPRCelebration(score, sessionData, type) {
+            let bestSet = sessionData.sets[0];
+            let maxS = -1;
+            sessionData.sets.forEach(s => {
+                let ss = getSetScore(s, type);
+                if(ss > maxS) { maxS = ss; bestSet = s; }
+            });
+
+            const text = formatSetText(bestSet, type);
+            document.getElementById('prModalText').innerText = text;
+            
+            const m = document.getElementById('prModal');
+            const bg = document.getElementById('prModalBg');
+            const c = document.getElementById('prModalContent');
+            
+            m.classList.remove('hidden');
+            void m.offsetWidth; // Force Reflow
+            
+            bg.classList.remove('opacity-0');
+            c.classList.remove('opacity-0', 'scale-90');
+            c.classList.add('scale-100');
+
+            setTimeout(() => {
+                bg.classList.add('opacity-0');
+                c.classList.remove('scale-100');
+                c.classList.add('opacity-0', 'scale-90');
+                setTimeout(() => m.classList.add('hidden'), 500);
+            }, 3000);
+            lucide.createIcons();
+        }
+
         window.saveSet = function(exId, setIndex) {
             const key = getStorageKey(selectedDay, exId);
             if(!appData.workouts[key]) appData.workouts[key] = { sets: [], date: getSelectedDateStr(), exerciseId: exId };
@@ -1348,6 +1455,27 @@
             if (wEl) appData.workouts[key].sets[setIndex].w = wEl.value;
             if (rEl) appData.workouts[key].sets[setIndex].r = rEl.value;
             if (tEl) appData.workouts[key].sets[setIndex].t = tEl.value;
+
+            // --- Trigger PR Checking ---
+            const dict = buildExerciseDict();
+            const exDef = dict[exId];
+            if (exDef) {
+                const histSessions = getHistoricalSessions(exDef.name).filter(s => s.date !== getSelectedDateStr());
+                let histBestScore = 0;
+                histSessions.forEach(s => {
+                    const score = getSessionPRScore(s, exDef.type);
+                    if (score > histBestScore) histBestScore = score;
+                });
+
+                const todayScore = getSessionPRScore(appData.workouts[key], exDef.type);
+                const prevCelebrated = window.celebratedPRs[exDef.name] || 0;
+
+                // Ensure we only celebrate if we strictly beat historical best AND haven't already celebrated a higher/equal score this session
+                if (histBestScore > 0 && todayScore > histBestScore && todayScore > prevCelebrated) {
+                    window.celebratedPRs[exDef.name] = todayScore;
+                    triggerPRCelebration(todayScore, appData.workouts[key], exDef.type);
+                }
+            }
             
             saveData();
             showToast();
@@ -1788,19 +1916,9 @@
             vis.innerHTML = `${barHtml}<div class="flex items-center gap-1.5 z-10 relative ml-8">${html}</div>`;
         };
 
-        function getHistory(exName) {
-            const selectedDate = getSelectedDateStr();
-            const matchingIds = new Set();
-            Object.values(workoutData).forEach(day => { 
-                day.AM.concat(day.PM).forEach(ex => { if(ex.name === exName) matchingIds.add(ex.id); });
-            });
-            return Object.values(appData.workouts)
-                .filter(d => (matchingIds.has(d.exerciseId) || (d.exerciseId && d.exerciseId.startsWith('bonus_'))) && d.date !== selectedDate)
-                .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-        }
-
         init();
     </script>
 </body>
 </html>
+
 
